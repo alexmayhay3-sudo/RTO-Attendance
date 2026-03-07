@@ -112,6 +112,26 @@ max-width:100%;
 <table id="rtoTable"></table>
 </div>
 
+<h3>Audit Log</h3>
+
+<div style="max-height:300px;overflow-y:auto;background:white;border:1px solid #ccc;">
+<table id="auditTable">
+
+<thead>
+<tr>
+<th>User</th>
+<th>Employee</th>
+<th>Date</th>
+<th>Status</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody id="auditBody"></tbody>
+
+</table>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -133,6 +153,8 @@ const db = firebase.database();
 </script>
 
 <script>
+
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
 
 let employees=[]
 let daysInMonth=31
@@ -208,6 +230,40 @@ reloadEmployees()
 
 }
 
+function getCellColor(status){
+
+if(status=="RTO") return "RTO"
+if(status=="WFH") return "WFH"
+if(status=="Vacation Leave") return "Vacation"
+if(status=="Sick Leave") return "Sick"
+if(status=="Unconfirmed") return "Unconfirmed"
+
+return ""
+
+}
+
+function createDropdown(name,day){
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+let saved=attendance[key] || ""
+
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Unconfirmed"]
+
+let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+
+options.forEach(o=>{
+html+=`<option ${saved===o?"selected":""}>${o}</option>`
+})
+
+html+="</select>"
+
+return html
+
+}
+
 function addEmployee(){
 
 let name=document.getElementById("empName").value.trim()
@@ -256,6 +312,9 @@ table.innerHTML=""
 
 generateHeader()
 
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
 employees.forEach(emp=>{
 
 let row=table.insertRow()
@@ -267,18 +326,19 @@ for(let i=1;i<=daysInMonth;i++){
 
 let cell=row.insertCell(i+1)
 
-cell.innerHTML=`<select onchange="logStatus(this,'${emp.name}','${i}')">
-<option></option>
-<option>RTO</option>
-<option>WFH</option>
-<option>Vacation Leave</option>
-<option>Sick Leave</option>
-<option>Unconfirmed</option>
-</select>`
+cell.innerHTML=createDropdown(emp.name,i)
+
+let key=emp.name+"-"+year+"-"+month+"-"+i
+let saved=attendance[key]
+
+let color=getCellColor(saved)
+
+if(color) cell.classList.add(color)
 
 }
 
 let removeCell=row.insertCell(daysInMonth+2)
+
 removeCell.innerHTML=`<button class="removeBtn" onclick="removeEmployee('${emp.name}')">Remove</button>`
 
 })
@@ -296,19 +356,48 @@ return
 }
 
 let status=select.value
+let time=new Date().toLocaleString()
 
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
 
 let key=name+"-"+year+"-"+month+"-"+day
 
+attendance[key]=status
+
 db.ref("attendance/"+key).set(status)
+
+let date=(parseInt(month)+1)+"/"+day+"/"+year
+
+fetch(SCRIPT_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+editor:editor,
+employee:name,
+date:date,
+status:status
+})
+})
+
+}
+
+function loadAttendance(){
+
+db.ref("attendance").once("value",snapshot=>{
+
+attendance=snapshot.val() || {}
+
+reloadEmployees()
+
+})
 
 }
 
 populateYears()
 changeMonth()
 loadEmployees()
+loadAttendance()
 
 </script>
 
