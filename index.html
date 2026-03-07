@@ -274,12 +274,33 @@ alert("Enter employee name and team")
 return
 }
 
-employees.push({name:name,team:team})
-
-reloadEmployees()
+db.ref("employees/"+name).set({
+name:name,
+team:team
+})
 
 document.getElementById("empName").value=""
 document.getElementById("teamName").value=""
+
+}
+
+function removeEmployee(name){
+db.ref("employees/"+name).remove()
+}
+
+function loadEmployees(){
+
+db.ref("employees").on("value",snapshot=>{
+
+employees=[]
+
+snapshot.forEach(child=>{
+employees.push(child.val())
+})
+
+reloadEmployees()
+
+})
 
 }
 
@@ -324,14 +345,6 @@ removeCell.innerHTML=`<button class="removeBtn" onclick="removeEmployee('${emp.n
 
 }
 
-function removeEmployee(name){
-
-employees=employees.filter(emp=>emp.name!==name)
-
-reloadEmployees()
-
-}
-
 function logStatus(select,name,day){
 
 let editor=document.getElementById("editor").value
@@ -343,7 +356,6 @@ return
 }
 
 let status=select.value
-let time=new Date().toLocaleString()
 
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
@@ -353,26 +365,6 @@ let key=name+"-"+year+"-"+month+"-"+day
 attendance[key]=status
 
 db.ref("attendance/"+key).set(status)
-
-let cell=select.parentElement
-cell.className=""
-
-let color=getCellColor(status)
-if(color) cell.classList.add(color)
-
-let date=(parseInt(month)+1)+"/"+day+"/"+year
-
-fetch(SCRIPT_URL,{
-method:"POST",
-body:JSON.stringify({
-editor:editor,
-employee:name,
-date:date,
-status:status
-})
-})
-
-setTimeout(loadLogs,500)
 
 }
 
@@ -388,83 +380,12 @@ reloadEmployees()
 
 }
 
-function loadLogs(){
-
-fetch(SCRIPT_URL)
-.then(res=>res.json())
-.then(data=>{
-
-let body=document.getElementById("auditBody")
-body.innerHTML=""
-
-data.reverse().forEach(row=>{
-
-let log=document.createElement("tr")
-
-log.innerHTML=`
-<td>${row[0]}</td>
-<td>${row[1]}</td>
-<td>${row[2]}</td>
-<td>${row[3]}</td>
-<td>${row[4]}</td>
-`
-
-body.appendChild(log)
-
-})
-
-})
-
-}
-
-function exportTable(){
-
-let table=document.getElementById("rtoTable")
-let rows=table.querySelectorAll("tr")
-
-let csv=[]
-
-rows.forEach(row=>{
-
-let cols=row.querySelectorAll("th,td")
-let rowData=[]
-
-cols.forEach(col=>{
-
-let select=col.querySelector("select")
-
-if(select){
-rowData.push(select.value)
-}else{
-rowData.push(col.innerText)
-}
-
-})
-
-csv.push(rowData.join(","))
-
-})
-
-let blob=new Blob([csv.join("\n")],{type:"text/csv"})
-let a=document.createElement("a")
-
-a.download="RTO_Attendance.csv"
-a.href=URL.createObjectURL(blob)
-
-document.body.appendChild(a)
-a.click()
-
-}
-
 populateYears()
 changeMonth()
-loadLogs()
+loadEmployees()
 loadAttendance()
-
-setInterval(loadLogs,10000)
 
 </script>
 
 </body>
 </html>
-
