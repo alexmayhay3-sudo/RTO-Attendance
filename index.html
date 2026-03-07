@@ -427,7 +427,17 @@ function exportTable(){
 
 let table=document.getElementById("rtoTable")
 
-let html=table.outerHTML
+let clone=table.cloneNode(true)
+
+let selects=clone.querySelectorAll("select")
+
+selects.forEach(select=>{
+let value=select.value
+let cell=select.parentElement
+cell.innerHTML=value
+})
+
+let html=clone.outerHTML
 
 let blob=new Blob([html],{
 type:"application/vnd.ms-excel"
@@ -435,13 +445,13 @@ type:"application/vnd.ms-excel"
 
 let url=URL.createObjectURL(blob)
 
-let a=document.createElement("a")
-a.href=url
-a.download="RTO_Attendance.xls"
+let link=document.createElement("a")
+link.href=url
+link.download="RTO_Attendance.xls"
 
-document.body.appendChild(a)
-a.click()
-document.body.removeChild(a)
+document.body.appendChild(link)
+link.click()
+document.body.removeChild(link)
 
 URL.revokeObjectURL(url)
 
@@ -461,3 +471,4 @@ setInterval(loadLogs,5000)
 
 </body>
 </html>
+
