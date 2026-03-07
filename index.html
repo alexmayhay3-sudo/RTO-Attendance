@@ -44,6 +44,7 @@ border:1px solid #3b3b3b;
 padding:3px;
 text-align:center;
 min-width:42px;
+transition:background .12s ease;
 }
 
 /* ZEBRA ROWS */
@@ -56,10 +57,22 @@ background:#2f2f2f;
 background:#262626;
 }
 
-/* HOVER */
+/* ROW HOVER */
 
 #rtoTable tr:hover{
 background:#3a3f46;
+}
+
+/* COLUMN HOVER */
+
+.highlight-col{
+background:#3a3f46 !important;
+}
+
+/* CELL FOCUS */
+
+td:hover{
+background:#4b5563 !important;
 }
 
 /* STICKY EMPLOYEE COLUMNS */
@@ -597,14 +610,46 @@ loadLogs()
 
 setInterval(loadLogs,5000)
 
+/* ===== COLUMN HIGHLIGHT ===== */
+
+document.addEventListener("mouseover",function(e){
+
+if(e.target.tagName==="TD"){
+
+let table=document.getElementById("rtoTable")
+let index=e.target.cellIndex
+
+for(let row of table.rows){
+
+if(row.cells[index]){
+row.cells[index].classList.add("highlight-col")
+}
+
+}
+
+}
+
+})
+
+document.addEventListener("mouseout",function(e){
+
+if(e.target.tagName==="TD"){
+
+let table=document.getElementById("rtoTable")
+
+for(let row of table.rows){
+
+for(let cell of row.cells){
+cell.classList.remove("highlight-col")
+}
+
+}
+
+}
+
+})
+
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
