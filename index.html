@@ -1,0 +1,423 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>RTO Attendance Tracker</title>
+
+<style>
+
+body{
+font-family:Segoe UI;
+background:#f4f6f8;
+padding:30px;
+}
+
+table{
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
+}
+
+th{
+background:#0078D4;
+color:white;
+}
+
+select,input{
+padding:5px;
+margin-right:5px;
+}
+
+button{
+padding:6px 10px;
+cursor:pointer;
+}
+
+.removeBtn{
+background:#d9534f;
+color:white;
+border:none;
+}
+
+.container{
+max-width:100%;
+}
+
+.RTO{background:#d4edda}
+.WFH{background:#d1ecf1}
+.Vacation{background:#fff3cd}
+.Sick{background:#e2d6f3}
+.Unconfirmed{background:#f8d7da}
+
+</style>
+</head>
+
+<body>
+
+<h2>RTO Attendance Tracker</h2>
+
+<label>Checker Name:</label>
+<input id="editor">
+
+<label>Month:</label>
+
+<select id="monthSelect" onchange="changeMonth()">
+<option value="0">January</option>
+<option value="1">February</option>
+<option value="2" selected>March</option>
+<option value="3">April</option>
+<option value="4">May</option>
+<option value="5">June</option>
+<option value="6">July</option>
+<option value="7">August</option>
+<option value="8">September</option>
+<option value="9">October</option>
+<option value="10">November</option>
+<option value="11">December</option>
+</select>
+
+<label>Year:</label>
+<select id="yearSelect" onchange="changeMonth()"></select>
+
+<h3 id="currentMonth"></h3>
+
+<br>
+
+<h3>Add Employee</h3>
+
+<input id="empName" placeholder="Employee Name">
+<input id="teamName" placeholder="Team">
+
+<button onclick="addEmployee()">Add Employee</button>
+
+<br><br>
+
+<button onclick="exportTable()">Export to Excel</button>
+
+<br><br>
+
+<div class="container" style="overflow-x:auto">
+<table id="rtoTable"></table>
+</div>
+
+<h3>Audit Log</h3>
+
+<table id="auditTable">
+
+<tr>
+<th>User</th>
+<th>Employee</th>
+<th>Date</th>
+<th>Status</th>
+<th>Time</th>
+</tr>
+
+</table>
+
+<script>
+
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbyywGv1rQAdTV1L62kmtukRZn3rROGLxW8arO7cJga96tDG63WA7JatcjZHbOICWgvt_Q/exec"
+
+let employees=[]
+let daysInMonth=31
+let attendance={}
+
+function populateYears(){
+
+let yearSelect=document.getElementById("yearSelect")
+let currentYear=new Date().getFullYear()
+
+for(let y=2024;y<=2050;y++){
+
+let option=document.createElement("option")
+option.value=y
+option.text=y
+
+if(y===currentYear) option.selected=true
+
+yearSelect.appendChild(option)
+
+}
+
+}
+
+function getDaysInMonth(year,month){
+return new Date(year,month+1,0).getDate()
+}
+
+function generateHeader(){
+
+let table=document.getElementById("rtoTable")
+
+let header1=document.createElement("tr")
+let header2=document.createElement("tr")
+
+header1.innerHTML="<th>Name</th><th>Team</th>"
+header2.innerHTML="<th></th><th></th>"
+
+let month=parseInt(document.getElementById("monthSelect").value)
+let year=parseInt(document.getElementById("yearSelect").value)
+
+daysInMonth=getDaysInMonth(year,month)
+
+let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+
+for(let i=1;i<=daysInMonth;i++){
+
+let date=new Date(year,month,i)
+
+header1.innerHTML+=`<th>${i}</th>`
+header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
+
+}
+
+header1.innerHTML+="<th>Remove</th>"
+header2.innerHTML+="<th></th>"
+
+table.appendChild(header1)
+table.appendChild(header2)
+
+}
+
+function changeMonth(){
+
+let monthSelect=document.getElementById("monthSelect")
+let year=document.getElementById("yearSelect").value
+
+let monthName=monthSelect.options[monthSelect.selectedIndex].text
+
+document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
+
+reloadEmployees()
+
+}
+
+function getCellColor(status){
+
+if(status=="RTO") return "RTO"
+if(status=="WFH") return "WFH"
+if(status=="Vacation Leave") return "Vacation"
+if(status=="Sick Leave") return "Sick"
+if(status=="Unconfirmed") return "Unconfirmed"
+
+return ""
+
+}
+
+function createDropdown(name,day){
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+let saved=attendance[key] || ""
+
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Unconfirmed"]
+
+let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+
+options.forEach(o=>{
+html+=`<option ${saved===o?"selected":""}>${o}</option>`
+})
+
+html+="</select>"
+
+return html
+
+}
+
+function addEmployee(){
+
+let name=document.getElementById("empName").value.trim()
+let team=document.getElementById("teamName").value.trim()
+
+if(name==""||team==""){
+alert("Enter employee name and team")
+return
+}
+
+employees.push({name:name,team:team})
+
+reloadEmployees()
+
+document.getElementById("empName").value=""
+document.getElementById("teamName").value=""
+
+}
+
+function reloadEmployees(){
+
+let table=document.getElementById("rtoTable")
+
+table.innerHTML=""
+
+generateHeader()
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+employees.forEach(emp=>{
+
+let row=table.insertRow()
+
+row.insertCell(0).innerText=emp.name
+row.insertCell(1).innerText=emp.team
+
+for(let i=1;i<=daysInMonth;i++){
+
+let cell=row.insertCell(i+1)
+
+cell.innerHTML=createDropdown(emp.name,i)
+
+let key=emp.name+"-"+year+"-"+month+"-"+i
+let saved=attendance[key]
+
+let color=getCellColor(saved)
+
+if(color) cell.classList.add(color)
+
+}
+
+let removeCell=row.insertCell(daysInMonth+2)
+
+removeCell.innerHTML=`<button class="removeBtn" onclick="removeEmployee('${emp.name}')">Remove</button>`
+
+})
+
+}
+
+function removeEmployee(name){
+
+if(!confirm("Remove employee: "+name+" ?")) return
+
+employees=employees.filter(emp=>emp.name!==name)
+
+reloadEmployees()
+
+}
+
+function logStatus(select,name,day){
+
+let editor=document.getElementById("editor").value
+
+if(editor==""){
+alert("Enter checker name")
+select.value=""
+return
+}
+
+let status=select.value
+let time=new Date().toLocaleString()
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+
+attendance[key]=status
+
+let cell=select.parentElement
+cell.className=""
+
+let color=getCellColor(status)
+if(color) cell.classList.add(color)
+
+let date=(parseInt(month)+1)+"/"+day+"/"+year
+
+let table=document.getElementById("auditTable")
+
+let row=table.insertRow()
+
+row.insertCell(0).innerText=editor
+row.insertCell(1).innerText=name
+row.insertCell(2).innerText=date
+row.insertCell(3).innerText=status
+row.insertCell(4).innerText=time
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+editor:editor,
+employee:name,
+date:date,
+status:status
+})
+})
+
+}
+
+function loadLogs(){
+
+fetch(SCRIPT_URL)
+.then(res=>res.json())
+.then(data=>{
+
+data.forEach(row=>{
+
+let log=document.getElementById("auditTable").insertRow()
+
+log.insertCell(0).innerText=row[0]
+log.insertCell(1).innerText=row[1]
+log.insertCell(2).innerText=row[2]
+log.insertCell(3).innerText=row[3]
+log.insertCell(4).innerText=row[4]
+
+})
+
+})
+
+}
+
+function exportTable(){
+
+let table=document.getElementById("rtoTable")
+let rows=table.querySelectorAll("tr")
+
+let csv=[]
+
+rows.forEach(row=>{
+
+let cols=row.querySelectorAll("th,td")
+let rowData=[]
+
+cols.forEach(col=>{
+
+let select=col.querySelector("select")
+
+if(select){
+rowData.push(select.value)
+}else{
+rowData.push(col.innerText)
+}
+
+})
+
+csv.push(rowData.join(","))
+
+})
+
+let blob=new Blob([csv.join("\n")],{type:"text/csv"})
+let a=document.createElement("a")
+
+a.download="RTO_Attendance.csv"
+a.href=URL.createObjectURL(blob)
+
+document.body.appendChild(a)
+a.click()
+
+}
+
+populateYears()
+changeMonth()
+loadLogs()
+
+</script>
+
+</body>
+</html>
+
