@@ -63,6 +63,14 @@ background:#262626;
 background:#3a3f46;
 }
 
+.highlight-col{
+background:#3a3f46 !important;
+}
+
+td:hover{
+background:#4b5563 !important;
+}
+
 /* COLUMN HOVER */
 
 .highlight-col{
@@ -610,6 +618,45 @@ loadLogs()
 
 setInterval(loadLogs,5000)
 
+/* COLUMN HIGHLIGHT */
+
+document.addEventListener("mouseover",function(e){
+
+if(e.target.tagName==="TD"){
+
+let table=document.getElementById("rtoTable")
+let column=e.target.cellIndex
+
+for(let row of table.rows){
+
+if(row.cells[column]){
+row.cells[column].classList.add("highlight-col")
+}
+
+}
+
+}
+
+})
+
+document.addEventListener("mouseout",function(e){
+
+if(e.target.tagName==="TD"){
+
+let table=document.getElementById("rtoTable")
+
+for(let row of table.rows){
+
+for(let cell of row.cells){
+cell.classList.remove("highlight-col")
+}
+
+}
+
+}
+
+})
+
 /* ===== COLUMN HIGHLIGHT ===== */
 
 document.addEventListener("mouseover",function(e){
@@ -653,3 +700,4 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
+
