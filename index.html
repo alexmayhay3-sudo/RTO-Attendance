@@ -6,8 +6,9 @@
 <style>
 
 body{
-font-family:Segoe UI;
-background:#f4f6f8;
+font-family:Segoe UI, Arial;
+background:#1e1e1e;
+color:#e6e6e6;
 padding:30px;
 }
 
@@ -19,139 +20,155 @@ max-width:100%;
 
 table{
 border-collapse:collapse;
-background:white;
 width:100%;
+background:#2a2a2a;
 font-size:12px;
 }
 
-/* headers */
+/* HEADER */
 
 th{
-background:#0078D4;
+background:#0f4c81;
 color:white;
+border:1px solid #444;
+padding:6px;
 position:sticky;
 top:0;
-padding:6px;
-border:1px solid #cfcfcf;
+z-index:3;
 }
 
-/* cells */
+/* CELLS */
 
 td{
-border:1px solid #e3e3e3;
+border:1px solid #3b3b3b;
 padding:3px;
 text-align:center;
 min-width:42px;
 }
 
-/* employee columns fixed */
+/* ZEBRA ROWS */
+
+#rtoTable tr:nth-child(even){
+background:#2f2f2f;
+}
+
+#rtoTable tr:nth-child(odd){
+background:#262626;
+}
+
+/* HOVER */
+
+#rtoTable tr:hover{
+background:#3a3f46;
+}
+
+/* STICKY EMPLOYEE COLUMNS */
 
 td:first-child, th:first-child{
 position:sticky;
 left:0;
-background:#ffffff;
+background:#202020;
 z-index:2;
 }
 
 td:nth-child(2), th:nth-child(2){
 position:sticky;
 left:120px;
-background:#ffffff;
+background:#202020;
 z-index:2;
 }
 
-/* zebra rows */
-
-#rtoTable tr:nth-child(even){
-background:#fafafa;
-}
-
-#rtoTable tr:nth-child(odd){
-background:#ffffff;
-}
-
-/* hover highlight */
-
-#rtoTable tr:hover{
-background:#e8f2ff;
-}
-
-/* dropdown compact */
+/* DROPDOWN */
 
 select{
-width:40px;
+width:42px;
 font-size:10px;
 padding:2px;
-border:1px solid #ccc;
 border-radius:3px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
 }
 
-/* inputs */
+/* INPUTS */
 
 input{
-padding:5px;
-margin-right:5px;
+padding:6px;
+margin-right:6px;
+border-radius:4px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
 }
 
-/* buttons */
+/* BUTTONS */
 
 button{
-padding:6px 10px;
+padding:6px 12px;
 cursor:pointer;
 border:none;
 border-radius:4px;
-background:#0078D4;
+background:#0f4c81;
 color:white;
+font-weight:500;
 }
 
 button:hover{
-opacity:.85;
+background:#1565a9;
 }
 
-/* remove button */
+/* REMOVE BUTTON */
 
 .removeBtn{
-background:#d9534f;
+background:#c0392b;
 }
 
-/* status colors */
+.removeBtn:hover{
+background:#e74c3c;
+}
+
+/* ATTENDANCE COLORS */
 
 .RTO{
-background:#d4edda !important;
-}
-
-.WFH{
-background:#d1ecf1 !important;
-}
-
-.Vacation{
-background:#fff3cd !important;
-}
-
-.Sick{
-background:#e2d6f3 !important;
-}
-
-.Unconfirmed{
-background:#f8d7da !important;
-}
-
-/* audit log table */
-
-#auditTable{
-width:100%;
-font-size:12px;
-border-collapse:collapse;
-}
-
-#auditTable th{
-background:#343a40;
+background:#1f6f43 !important;
 color:white;
 }
 
+.WFH{
+background:#176b87 !important;
+color:white;
+}
+
+.Vacation{
+background:#b88a1b !important;
+color:black;
+}
+
+.Sick{
+background:#6b4fb3 !important;
+color:white;
+}
+
+.Unconfirmed{
+background:#a93232 !important;
+color:white;
+}
+
+/* AUDIT TABLE */
+
+#auditTable{
+width:100%;
+border-collapse:collapse;
+background:#2a2a2a;
+}
+
+#auditTable th{
+background:#1b1b1b;
+}
+
 #auditTable td{
-border:1px solid #ddd;
-padding:5px;
+border:1px solid #3a3a3a;
+padding:6px;
 }
 
 </style>
@@ -584,6 +601,7 @@ setInterval(loadLogs,5000)
 
 </body>
 </html>
+
 
 
 
