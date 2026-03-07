@@ -371,7 +371,6 @@ let date=(parseInt(month)+1)+"/"+day+"/"+year
 
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 editor:editor,
 employee:name,
@@ -394,10 +393,42 @@ reloadEmployees()
 
 }
 
+function loadLogs(){
+
+fetch(SCRIPT_URL)
+.then(res=>res.json())
+.then(data=>{
+
+let body=document.getElementById("auditBody")
+body.innerHTML=""
+
+data.reverse().forEach(row=>{
+
+let tr=document.createElement("tr")
+
+tr.innerHTML=`
+<td>${row[0]}</td>
+<td>${row[1]}</td>
+<td>${row[2]}</td>
+<td>${row[3]}</td>
+<td>${row[4]}</td>
+`
+
+body.appendChild(tr)
+
+})
+
+})
+
+}
+
 populateYears()
 changeMonth()
 loadEmployees()
 loadAttendance()
+loadLogs()
+
+setInterval(loadLogs,5000)
 
 </script>
 
