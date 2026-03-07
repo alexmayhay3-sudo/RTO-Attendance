@@ -14,10 +14,12 @@ padding:30px;
 table{
 border-collapse:collapse;
 background:white;
+width:100%;
+font-size:13px;
 }
 
 th,td{
-border:1px solid #ccc;
+border:1px solid #ddd;
 padding:6px;
 text-align:center;
 }
@@ -25,6 +27,12 @@ text-align:center;
 th{
 background:#0078D4;
 color:white;
+position:sticky;
+top:0;
+}
+
+tr:hover{
+background:#f1f1f1;
 }
 
 select,input{
@@ -106,8 +114,10 @@ max-width:100%;
 
 <h3>Audit Log</h3>
 
+<div style="max-height:300px;overflow-y:auto;background:white;border:1px solid #ccc;">
 <table id="auditTable">
 
+<thead>
 <tr>
 <th>User</th>
 <th>Employee</th>
@@ -115,16 +125,40 @@ max-width:100%;
 <th>Status</th>
 <th>Time</th>
 </tr>
+</thead>
+
+<tbody id="auditBody"></tbody>
 
 </table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
 
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzSHr2ZSe_BCrcJUW3-e1xUj8ck_5SHRpNx-D_OWt-tPL7kw5XOVkveUtlip3Xmd_YoCg/exec"
-  
+const firebaseConfig = {
+apiKey: "AIzaSyDT_R4snf2GPeAMj8KwG_gIFkuabMIw2UE",
+authDomain: "rto-attendance-tracker.firebaseapp.com",
+databaseURL: "https://rto-attendance-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "rto-attendance-tracker",
+storageBucket: "rto-attendance-tracker.firebasestorage.app",
+messagingSenderId: "618387456280",
+appId: "1:618387456280:web:7115e8414115b3555f5e6d"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+</script>
+
+<script>
+
+const SCRIPT_URL=""
+
 let employees=[]
-let attendance={}
 let daysInMonth=31
+let attendance={}
 
 function populateYears(){
 
@@ -244,16 +278,6 @@ employees.push({name:name,team:team})
 
 reloadEmployees()
 
-fetch(SCRIPT_URL,{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({
-type:"employee",
-name:name,
-team:team
-})
-})
-
 document.getElementById("empName").value=""
 document.getElementById("teamName").value=""
 
@@ -262,6 +286,7 @@ document.getElementById("teamName").value=""
 function reloadEmployees(){
 
 let table=document.getElementById("rtoTable")
+
 table.innerHTML=""
 
 generateHeader()
@@ -301,8 +326,6 @@ removeCell.innerHTML=`<button class="removeBtn" onclick="removeEmployee('${emp.n
 
 function removeEmployee(name){
 
-if(!confirm("Remove employee: "+name+" ?")) return
-
 employees=employees.filter(emp=>emp.name!==name)
 
 reloadEmployees()
@@ -329,6 +352,8 @@ let key=name+"-"+year+"-"+month+"-"+day
 
 attendance[key]=status
 
+db.ref("attendance/"+key).set(status)
+
 let cell=select.parentElement
 cell.className=""
 
@@ -337,26 +362,28 @@ if(color) cell.classList.add(color)
 
 let date=(parseInt(month)+1)+"/"+day+"/"+year
 
-let table=document.getElementById("auditTable")
-
-let row=table.insertRow()
-
-row.insertCell(0).innerText=editor
-row.insertCell(1).innerText=name
-row.insertCell(2).innerText=date
-row.insertCell(3).innerText=status
-row.insertCell(4).innerText=time
-
 fetch(SCRIPT_URL,{
 method:"POST",
-headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
-type:"log",
 editor:editor,
 employee:name,
 date:date,
 status:status
 })
+})
+
+setTimeout(loadLogs,500)
+
+}
+
+function loadAttendance(){
+
+db.ref("attendance").once("value",snapshot=>{
+
+attendance=snapshot.val() || {}
+
+reloadEmployees()
+
 })
 
 }
@@ -367,39 +394,24 @@ fetch(SCRIPT_URL)
 .then(res=>res.json())
 .then(data=>{
 
-employees=[]
+let body=document.getElementById("auditBody")
+body.innerHTML=""
 
-data.employees.forEach(emp=>{
-employees.push({name:emp[0],team:emp[1]})
-})
+data.reverse().forEach(row=>{
 
-data.logs.forEach(row=>{
+let log=document.createElement("tr")
 
-let user=row[0]
-let employee=row[1]
-let date=row[2]
-let status=row[3]
+log.innerHTML=`
+<td>${row[0]}</td>
+<td>${row[1]}</td>
+<td>${row[2]}</td>
+<td>${row[3]}</td>
+<td>${row[4]}</td>
+`
 
-let parts=date.split("/")
-let month=parseInt(parts[0])-1
-let day=parseInt(parts[1])
-let year=parseInt(parts[2])
-
-let key=employee+"-"+year+"-"+month+"-"+day
-
-attendance[key]=status
-
-let log=document.getElementById("auditTable").insertRow()
-
-log.insertCell(0).innerText=user
-log.insertCell(1).innerText=employee
-log.insertCell(2).innerText=date
-log.insertCell(3).innerText=status
-log.insertCell(4).innerText=row[4]
+body.appendChild(log)
 
 })
-
-reloadEmployees()
 
 })
 
@@ -447,10 +459,11 @@ a.click()
 populateYears()
 changeMonth()
 loadLogs()
+loadAttendance()
+
+setInterval(loadLogs,10000)
 
 </script>
 
 </body>
 </html>
-
-
