@@ -426,18 +426,38 @@ body.appendChild(tr)
 function exportTable(){
 
 let table=document.getElementById("rtoTable")
+let rows=table.rows
 
-let clone=table.cloneNode(true)
+let html="<table border='1'>"
 
-let selects=clone.querySelectorAll("select")
+for(let i=0;i<rows.length;i++){
 
-selects.forEach(select=>{
-let value=select.value
-let cell=select.parentElement
-cell.innerHTML=value
-})
+html+="<tr>"
 
-let html=clone.outerHTML
+let cells=rows[i].cells
+
+for(let j=0;j<cells.length;j++){
+
+let cell=cells[j]
+let select=cell.querySelector("select")
+
+let value=""
+
+if(select){
+value=select.options[select.selectedIndex].text
+}else{
+value=cell.innerText
+}
+
+html+="<td>"+value+"</td>"
+
+}
+
+html+="</tr>"
+
+}
+
+html+="</table>"
 
 let blob=new Blob([html],{
 type:"application/vnd.ms-excel"
@@ -471,4 +491,5 @@ setInterval(loadLogs,5000)
 
 </body>
 </html>
+
 
