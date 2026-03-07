@@ -11,55 +11,148 @@ background:#f4f6f8;
 padding:30px;
 }
 
+.container{
+max-width:100%;
+}
+
+/* TABLE */
+
 table{
 border-collapse:collapse;
 background:white;
 width:100%;
-font-size:13px;
+font-size:12px;
 }
 
-th,td{
-border:1px solid #ddd;
-padding:6px;
-text-align:center;
-}
+/* headers */
 
 th{
 background:#0078D4;
 color:white;
 position:sticky;
 top:0;
+padding:6px;
+border:1px solid #cfcfcf;
 }
 
-tr:hover{
-background:#f1f1f1;
+/* cells */
+
+td{
+border:1px solid #e3e3e3;
+padding:3px;
+text-align:center;
+min-width:42px;
 }
 
-select,input{
+/* employee columns fixed */
+
+td:first-child, th:first-child{
+position:sticky;
+left:0;
+background:#ffffff;
+z-index:2;
+}
+
+td:nth-child(2), th:nth-child(2){
+position:sticky;
+left:120px;
+background:#ffffff;
+z-index:2;
+}
+
+/* zebra rows */
+
+#rtoTable tr:nth-child(even){
+background:#fafafa;
+}
+
+#rtoTable tr:nth-child(odd){
+background:#ffffff;
+}
+
+/* hover highlight */
+
+#rtoTable tr:hover{
+background:#e8f2ff;
+}
+
+/* dropdown compact */
+
+select{
+width:40px;
+font-size:10px;
+padding:2px;
+border:1px solid #ccc;
+border-radius:3px;
+}
+
+/* inputs */
+
+input{
 padding:5px;
 margin-right:5px;
 }
 
+/* buttons */
+
 button{
 padding:6px 10px;
 cursor:pointer;
+border:none;
+border-radius:4px;
+background:#0078D4;
+color:white;
 }
+
+button:hover{
+opacity:.85;
+}
+
+/* remove button */
 
 .removeBtn{
 background:#d9534f;
+}
+
+/* status colors */
+
+.RTO{
+background:#d4edda !important;
+}
+
+.WFH{
+background:#d1ecf1 !important;
+}
+
+.Vacation{
+background:#fff3cd !important;
+}
+
+.Sick{
+background:#e2d6f3 !important;
+}
+
+.Unconfirmed{
+background:#f8d7da !important;
+}
+
+/* audit log table */
+
+#auditTable{
+width:100%;
+font-size:12px;
+border-collapse:collapse;
+}
+
+#auditTable th{
+background:#343a40;
 color:white;
-border:none;
 }
 
-.container{
-max-width:100%;
+#auditTable td{
+border:1px solid #ddd;
+padding:5px;
 }
-
-.RTO{background:#d4edda}
-.WFH{background:#d1ecf1}
-.Vacation{background:#fff3cd}
-.Sick{background:#e2d6f3}
-.Unconfirmed{background:#f8d7da}
 
 </style>
 </head>
@@ -491,5 +584,6 @@ setInterval(loadLogs,5000)
 
 </body>
 </html>
+
 
 
