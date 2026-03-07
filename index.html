@@ -421,6 +421,34 @@ body.appendChild(tr)
 
 }
 
+/* ===== EXPORT TO EXCEL FUNCTION ===== */
+
+function exportTable(){
+
+let table=document.getElementById("rtoTable")
+
+let html=table.outerHTML
+
+let blob=new Blob([html],{
+type:"application/vnd.ms-excel"
+})
+
+let url=URL.createObjectURL(blob)
+
+let a=document.createElement("a")
+a.href=url
+a.download="RTO_Attendance.xls"
+
+document.body.appendChild(a)
+a.click()
+document.body.removeChild(a)
+
+URL.revokeObjectURL(url)
+
+}
+
+/* ===== INIT ===== */
+
 populateYears()
 changeMonth()
 loadEmployees()
