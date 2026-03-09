@@ -138,15 +138,6 @@ button:hover{
 background:#1565a9;
 }
 
-/* REMOVE BUTTON */
-
-.removeBtn{
-background:#c0392b;
-}
-
-.removeBtn:hover{
-background:#e74c3c;
-}
 
 /* ATTENDANCE COLORS */
 
@@ -436,9 +427,6 @@ document.getElementById("teamName").value=""
 
 }
 
-function removeEmployee(name){
-db.ref("employees/"+name).remove()
-}
 
 function loadEmployees(){
 
@@ -718,6 +706,7 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
+
 
 
 
