@@ -630,7 +630,58 @@ document.body.removeChild(link)
 URL.revokeObjectURL(url)
 
 }
-  
+function exportTodayRTO(){
+
+let table=document.getElementById("rtoTable")
+
+let today=new Date().getDate()
+
+let html="<table border='1'>"
+html+="<tr><th>Name</th><th>Team</th><th>Status</th></tr>"
+
+for(let i=2;i<table.rows.length;i++){
+
+let row=table.rows[i]
+
+let name=row.cells[0].innerText
+let team=row.cells[1].innerText
+
+let cell=row.cells[today+1]
+let select=cell.querySelector("select")
+
+let status=select ? select.value : ""
+
+if(status==="RTO"){
+
+html+="<tr>"
+html+="<td>"+name+"</td>"
+html+="<td>"+team+"</td>"
+html+="<td>"+status+"</td>"
+html+="</tr>"
+
+}
+
+}
+
+html+="</table>"
+
+let blob=new Blob([html],{
+type:"application/vnd.ms-excel"
+})
+
+let url=URL.createObjectURL(blob)
+
+let link=document.createElement("a")
+link.href=url
+link.download="RTO_Today_"+new Date().toISOString().slice(0,10)+".xls"
+
+document.body.appendChild(link)
+link.click()
+document.body.removeChild(link)
+
+URL.revokeObjectURL(url)
+
+}  
 /* ===== INIT ===== */
 
 populateYears()
@@ -723,6 +774,7 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
+
 
 
 
