@@ -578,46 +578,41 @@ body.appendChild(tr)
 
 function exportToday(){
 
+let table=document.getElementById("rtoTable")
+
 let today=new Date()
 let day=today.getDate()
 
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
 
+let rows=table.rows
+
 let html="<table border='1'>"
-html+="<tr><th>Name</th><th>Team</th><th>Date</th><th>Status</th></tr>"
+html+="<tr><th>Name</th><th>Team</th><th>Date</th></tr>"
 
-employees.forEach(emp=>{
+for(let i=2;i<rows.length;i++){
 
-let key=emp.name+"-"+year+"-"+month+"-"+day
-let status=attendance[key] || ""
+let name=rows[i].cells[0].innerText
+let team=rows[i].cells[1].innerText
+
+let cell=rows[i].cells[day+1]
+
+if(!cell) continue
+
+let select=cell.querySelector("select")
+
+if(!select) continue
+
+let status=select.value
+
+if(status==="RTO"){
 
 html+="<tr>"
-html+="<td>"+emp.name+"</td>"
-html+="<td>"+emp.team+"</td>"
+html+="<td>"+name+"</td>"
+html+="<td>"+team+"</td>"
 html+="<td>"+(parseInt(month)+1)+"/"+day+"/"+year+"</td>"
-html+="<td>"+status+"</td>"
 html+="</tr>"
-
-})
-
-html+="</table>"
-
-let blob=new Blob([html],{
-type:"application/vnd.ms-excel"
-})
-
-let url=URL.createObjectURL(blob)
-
-let link=document.createElement("a")
-link.href=url
-link.download="Attendance_Today.xls"
-
-document.body.appendChild(link)
-link.click()
-document.body.removeChild(link)
-
-URL.revokeObjectURL(url)
 
 }
 
@@ -790,7 +785,6 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
-
 
 
 
