@@ -489,9 +489,6 @@ if(color) cell.classList.add(color)
 
 }
 
-let removeCell=row.insertCell(daysInMonth+2)
-
-removeCell.innerHTML=`<button class="removeBtn" onclick="removeEmployee('${emp.name}')">Remove</button>`
 
 })
 
@@ -588,7 +585,7 @@ html+="<tr>"
 
 let cells=rows[i].cells
 
-for(let j=0;j<cells.length-1;j++){
+for(let j=0;j<cells.length;j++){
 
 let cell=cells[j]
 let select=cell.querySelector("select")
@@ -721,6 +718,7 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
+
 
 
 
