@@ -161,7 +161,7 @@ background:#6b4fb3 !important;
 color:white;
 }
 
-.Unconfirmed{
+.Off{
 background:#a93232 !important;
 color:white;
 }
@@ -379,7 +379,7 @@ if(status=="RTO") return "RTO"
 if(status=="WFH") return "WFH"
 if(status=="Vacation Leave") return "Vacation"
 if(status=="Sick Leave") return "Sick"
-if(status=="Unconfirmed") return "Unconfirmed"
+if(status=="Off") return "Off"
 
 return ""
 
@@ -393,7 +393,7 @@ let year=document.getElementById("yearSelect").value
 let key=name+"-"+year+"-"+month+"-"+day
 let saved=attendance[key] || ""
 
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Unconfirmed"]
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off"]
 
 let html=`<select onchange="logStatus(this,'${name}','${day}')">`
 
@@ -706,6 +706,7 @@ cell.classList.remove("highlight-col")
 
 </body>
 </html>
+
 
 
 
