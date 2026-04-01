@@ -63,6 +63,8 @@ color:#e6e6e6;
 <select id="yearSelect" onchange="changeMonth()"></select>
 
 <h3 id="currentMonth"></h3>
+<br>
+<button onclick="exportTable()">Export to Excel</button>
 
 <div class="container" style="overflow-x:auto">
 <table id="rtoTable"></table>
@@ -325,7 +327,16 @@ body.appendChild(tr)
 })
 })
 }
+/* INIT */
 
+populateYears()
+setCurrentMonth()
+changeMonth()
+loadEmployees()
+loadAttendance()
+loadLogs()
+
+setInterval(loadLogs,5000)
 /* INIT */
 
 populateYears()
