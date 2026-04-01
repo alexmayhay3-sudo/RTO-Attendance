@@ -4,27 +4,136 @@
 <title>RTO Attendance Tracker</title>
 
 <style>
+
 body{
 font-family:Segoe UI, Arial;
 background:#1e1e1e;
 color:#e6e6e6;
 padding:30px;
 }
-.container{max-width:100%;}
-table{border-collapse:collapse;width:100%;background:#2a2a2a;font-size:12px;}
-th{background:#0f4c81;color:white;border:1px solid #444;padding:6px;position:sticky;top:0;z-index:3;}
-td{border:1px solid #3b3b3b;padding:3px;text-align:center;min-width:42px;}
+
+.container{
+max-width:100%;
+}
+
+/* TABLE */
+
+table{
+border-collapse:collapse;
+width:100%;
+background:#2a2a2a;
+font-size:12px;
+}
+
+/* HEADER */
+
+th{
+background:#0f4c81;
+color:white;
+border:1px solid #444;
+padding:6px;
+position:sticky;
+top:0;
+z-index:3;
+}
+
+/* CELLS */
+
+td{
+border:1px solid #3b3b3b;
+padding:3px;
+text-align:center;
+min-width:42px;
+transition:background .12s ease;
+}
+
+/* ROW COLORS */
+
 #rtoTable tr:nth-child(even){background:#2f2f2f;}
 #rtoTable tr:nth-child(odd){background:#262626;}
-.highlight-col{background:#3a3f46 !important;}
-td:first-child, th:first-child{position:sticky;left:0;background:#202020;}
-td:nth-child(2), th:nth-child(2){position:sticky;left:120px;background:#202020;}
-select{width:42px;font-size:10px;}
-.RTO{background:#1f6f43;color:white;}
-.WFH{background:#176b87;color:white;}
-.Vacation{background:#b88a1b;color:black;}
-.Sick{background:#6b4fb3;color:white;}
-.Off{background:#a93232;color:white;}
+#rtoTable tr:hover{background:#3a3f46;}
+
+/* STICKY */
+
+td:first-child, th:first-child{
+position:sticky;
+left:0;
+background:#202020;
+z-index:2;
+}
+
+td:nth-child(2), th:nth-child(2){
+position:sticky;
+left:120px;
+background:#202020;
+z-index:2;
+}
+
+/* INPUTS */
+
+input{
+padding:6px;
+margin-right:6px;
+border-radius:4px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
+}
+
+/* BUTTONS */
+
+button{
+padding:6px 12px;
+cursor:pointer;
+border:none;
+border-radius:4px;
+background:#0f4c81;
+color:white;
+}
+
+button:hover{
+background:#1565a9;
+}
+
+/* 🔥 DROPDOWN FIX */
+
+select{
+width:42px;
+font-size:10px;
+padding:2px;
+border-radius:3px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
+appearance:none;
+}
+
+select option{
+background:#1f1f1f;
+color:#e6e6e6;
+}
+
+select:focus{
+outline:none;
+border-color:#0f4c81;
+box-shadow:0 0 3px #0f4c81;
+}
+
+/* STATUS COLORS */
+
+.RTO{background:#1f6f43 !important;color:white;}
+.WFH{background:#176b87 !important;color:white;}
+.Vacation{background:#b88a1b !important;color:black;}
+.Sick{background:#6b4fb3 !important;color:white;}
+.Off{background:#a93232 !important;color:white;}
+
+/* TODAY HIGHLIGHT */
+
+.today{
+background:#ff9800 !important;
+color:black !important;
+}
+
 </style>
 </head>
 
@@ -36,6 +145,7 @@ select{width:42px;font-size:10px;}
 <input id="editor">
 
 <label>Month:</label>
+
 <select id="monthSelect" onchange="changeMonth()">
 <option value="0">January</option>
 <option value="1">February</option>
@@ -64,6 +174,7 @@ select{width:42px;font-size:10px;}
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
+
 const firebaseConfig = {
 apiKey: "AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
 authDomain: "rto-attendance-tracker-c18e8.firebaseapp.com",
@@ -76,19 +187,17 @@ appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-</script>
-
-<script>
-
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
 
 let employees=[]
 let daysInMonth=31
 let attendance={}
 
+/* YEAR */
+
 function populateYears(){
 let yearSelect=document.getElementById("yearSelect")
 let currentYear=new Date().getFullYear()
+
 for(let y=2024;y<=2050;y++){
 let option=document.createElement("option")
 option.value=y
@@ -98,16 +207,21 @@ yearSelect.appendChild(option)
 }
 }
 
+/* AUTO MONTH */
+
 function setCurrentMonth(){
 let now=new Date()
 document.getElementById("monthSelect").value=now.getMonth()
 }
+
+/* HEADER */
 
 function getDaysInMonth(year,month){
 return new Date(year,month+1,0).getDate()
 }
 
 function generateHeader(){
+
 let table=document.getElementById("rtoTable")
 
 let header1=document.createElement("tr")
@@ -131,7 +245,10 @@ header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
 
 table.appendChild(header1)
 table.appendChild(header2)
+
 }
+
+/* TODAY HIGHLIGHT */
 
 function highlightTodayColumn(){
 
@@ -149,74 +266,38 @@ let table=document.getElementById("rtoTable")
 
 let columnIndex=todayDate+1
 
-for(let i=0;i<table.rows.length;i++){
-let row=table.rows[i]
+for(let row of table.rows){
 if(row.cells[columnIndex]){
-row.cells[columnIndex].style.background="#ff9800"
-row.cells[columnIndex].style.color="black"
+row.cells[columnIndex].classList.add("today")
 }
 }
+
 }
+
+/* CHANGE MONTH */
 
 function changeMonth(){
+
 let monthSelect=document.getElementById("monthSelect")
 let year=document.getElementById("yearSelect").value
+
 let monthName=monthSelect.options[monthSelect.selectedIndex].text
+
 document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
+
 reloadEmployees()
+
 }
 
-function getCellColor(status){
-if(status=="RTO") return "RTO"
-if(status=="WFH") return "WFH"
-if(status=="Vacation Leave") return "Vacation"
-if(status=="Sick Leave") return "Sick"
-if(status=="Off") return "Off"
-return ""
-}
-
-function createDropdown(name,day){
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
-let key=name+"-"+year+"-"+month+"-"+day
-let saved=attendance[key] || ""
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off"]
-let html=`<select onchange="logStatus(this,'${name}','${day}')">`
-options.forEach(o=>{
-html+=`<option ${saved===o?"selected":""}>${o}</option>`
-})
-html+="</select>"
-return html
-}
-
-function addEmployee(){
-let name=document.getElementById("empName").value.trim()
-let team=document.getElementById("teamName").value.trim()
-if(name==""||team==""){alert("Enter employee name and team");return}
-db.ref("employees/"+name).set({name:name,team:team})
-document.getElementById("empName").value=""
-document.getElementById("teamName").value=""
-}
-
-function loadEmployees(){
-db.ref("employees").on("value",snapshot=>{
-employees=[]
-snapshot.forEach(child=>{
-employees.push(child.val())
-})
-reloadEmployees()
-})
-}
+/* RELOAD */
 
 function reloadEmployees(){
 
 let table=document.getElementById("rtoTable")
+
 table.innerHTML=""
 
 generateHeader()
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
 
 employees.forEach(emp=>{
 
@@ -228,15 +309,7 @@ row.insertCell(1).innerText=emp.team
 for(let i=1;i<=daysInMonth;i++){
 
 let cell=row.insertCell(i+1)
-
-cell.innerHTML=createDropdown(emp.name,i)
-
-let key=emp.name+"-"+year+"-"+month+"-"+i
-let saved=attendance[key]
-
-let color=getCellColor(saved)
-
-if(color) cell.classList.add(color)
+cell.innerHTML="<select><option></option></select>"
 
 }
 
@@ -246,72 +319,11 @@ setTimeout(highlightTodayColumn,100)
 
 }
 
-function logStatus(select,name,day){
-
-let editor=document.getElementById("editor").value
-
-if(editor==""){
-alert("Enter checker name")
-select.value=""
-return
-}
-
-let status=select.value
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
-
-let key=name+"-"+year+"-"+month+"-"+day
-
-attendance[key]=status
-
-db.ref("attendance/"+key).set(status)
-
-let date=(parseInt(month)+1)+"/"+day+"/"+year
-
-fetch(SCRIPT_URL,{
-method:"POST",
-body:JSON.stringify({
-editor:editor,
-employee:name,
-date:date,
-status:status
-})
-})
-
-}
-
-function loadAttendance(){
-db.ref("attendance").once("value",snapshot=>{
-attendance=snapshot.val() || {}
-reloadEmployees()
-})
-}
-
-function loadLogs(){
-fetch(SCRIPT_URL)
-.then(res=>res.json())
-.then(data=>{
-let body=document.getElementById("auditBody")
-body.innerHTML=""
-data.reverse().forEach(row=>{
-let tr=document.createElement("tr")
-tr.innerHTML=`<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`
-body.appendChild(tr)
-})
-})
-}
-
 /* INIT */
 
 populateYears()
 setCurrentMonth()
 changeMonth()
-loadEmployees()
-loadAttendance()
-loadLogs()
-
-setInterval(loadLogs,5000)
 
 </script>
 
