@@ -4,185 +4,27 @@
 <title>RTO Attendance Tracker</title>
 
 <style>
-
 body{
 font-family:Segoe UI, Arial;
 background:#1e1e1e;
 color:#e6e6e6;
 padding:30px;
 }
-
-.container{
-max-width:100%;
-}
-
-/* TABLE */
-
-table{
-border-collapse:collapse;
-width:100%;
-background:#2a2a2a;
-font-size:12px;
-}
-
-/* HEADER */
-
-th{
-background:#0f4c81;
-color:white;
-border:1px solid #444;
-padding:6px;
-position:sticky;
-top:0;
-z-index:3;
-}
-
-/* CELLS */
-
-td{
-border:1px solid #3b3b3b;
-padding:3px;
-text-align:center;
-min-width:42px;
-transition:background .12s ease;
-}
-
-/* ZEBRA ROWS */
-
-#rtoTable tr:nth-child(even){
-background:#2f2f2f;
-}
-
-#rtoTable tr:nth-child(odd){
-background:#262626;
-}
-
-/* ROW HOVER */
-
-#rtoTable tr:hover{
-background:#3a3f46;
-}
-
-.highlight-col{
-background:#3a3f46 !important;
-}
-
-td:hover{
-background:#4b5563 !important;
-}
-
-/* COLUMN HOVER */
-
-.highlight-col{
-background:#3a3f46 !important;
-}
-
-/* CELL FOCUS */
-
-td:hover{
-background:#4b5563 !important;
-}
-
-/* STICKY EMPLOYEE COLUMNS */
-
-td:first-child, th:first-child{
-position:sticky;
-left:0;
-background:#202020;
-z-index:2;
-}
-
-td:nth-child(2), th:nth-child(2){
-position:sticky;
-left:120px;
-background:#202020;
-z-index:2;
-}
-
-/* DROPDOWN */
-
-select{
-width:42px;
-font-size:10px;
-padding:2px;
-border-radius:3px;
-border:1px solid #555;
-background:#1f1f1f;
-color:#e6e6e6;
-}
-
-/* INPUTS */
-
-input{
-padding:6px;
-margin-right:6px;
-border-radius:4px;
-border:1px solid #555;
-background:#1f1f1f;
-color:#e6e6e6;
-}
-
-/* BUTTONS */
-
-button{
-padding:6px 12px;
-cursor:pointer;
-border:none;
-border-radius:4px;
-background:#0f4c81;
-color:white;
-font-weight:500;
-}
-
-button:hover{
-background:#1565a9;
-}
-
-
-/* ATTENDANCE COLORS */
-
-.RTO{
-background:#1f6f43 !important;
-color:white;
-}
-
-.WFH{
-background:#176b87 !important;
-color:white;
-}
-
-.Vacation{
-background:#b88a1b !important;
-color:black;
-}
-
-.Sick{
-background:#6b4fb3 !important;
-color:white;
-}
-
-.Off{
-background:#a93232 !important;
-color:white;
-}
-
-/* AUDIT TABLE */
-
-#auditTable{
-width:100%;
-border-collapse:collapse;
-background:#2a2a2a;
-}
-
-#auditTable th{
-background:#1b1b1b;
-}
-
-#auditTable td{
-border:1px solid #3a3a3a;
-padding:6px;
-}
-
+.container{max-width:100%;}
+table{border-collapse:collapse;width:100%;background:#2a2a2a;font-size:12px;}
+th{background:#0f4c81;color:white;border:1px solid #444;padding:6px;position:sticky;top:0;z-index:3;}
+td{border:1px solid #3b3b3b;padding:3px;text-align:center;min-width:42px;}
+#rtoTable tr:nth-child(even){background:#2f2f2f;}
+#rtoTable tr:nth-child(odd){background:#262626;}
+.highlight-col{background:#3a3f46 !important;}
+td:first-child, th:first-child{position:sticky;left:0;background:#202020;}
+td:nth-child(2), th:nth-child(2){position:sticky;left:120px;background:#202020;}
+select{width:42px;font-size:10px;}
+.RTO{background:#1f6f43;color:white;}
+.WFH{background:#176b87;color:white;}
+.Vacation{background:#b88a1b;color:black;}
+.Sick{background:#6b4fb3;color:white;}
+.Off{background:#a93232;color:white;}
 </style>
 </head>
 
@@ -190,37 +32,14 @@ padding:6px;
 
 <h2>RTO Attendance Tracker</h2>
 
-<div style="
-background:#2a2a2a;
-border:1px solid #444;
-padding:12px;
-margin-bottom:15px;
-border-radius:6px;
-max-width:700px;
-">
-
-<b>Instructions:</b>
-
-<ul style="margin-top:8px;font-size:13px;line-height:1.5;">
-<li>Enter your <b>Checker Name</b> before editing attendance.</li>
-<li>Select the correct <b>Month and Year</b>.</li>
-<li>Add employees using the <b>Add Employee</b> section.</li>
-<li>Use the dropdown in each date cell to update attendance status.</li>
-<li>All changes are logged automatically in the <b>Audit Log</b>.</li>
-<li>Use <b>Export to Excel</b> to download the current table.</li>
-</ul>
-
-</div>
-
 <label>Checker Name:</label>
 <input id="editor">
 
 <label>Month:</label>
-
 <select id="monthSelect" onchange="changeMonth()">
 <option value="0">January</option>
 <option value="1">February</option>
-<option value="2" selected>March</option>
+<option value="2">March</option>
 <option value="3">April</option>
 <option value="4">May</option>
 <option value="5">June</option>
@@ -237,91 +56,32 @@ max-width:700px;
 
 <h3 id="currentMonth"></h3>
 
-<br>
-
-<h3>Add Employee</h3>
-
-<input id="empName" placeholder="Employee Name">
-<input id="teamName" placeholder="Team">
-
-<button onclick="addEmployee()">Add Employee</button>
-
-<br><br>
-
-<button onclick="exportTable()">Export to Excel</button>
-<button onclick="exportTodayRTO()">Export Today RTO</button>
-  
-<br><br>
-
 <div class="container" style="overflow-x:auto">
 <table id="rtoTable"></table>
 </div>
 
-<h3>Audit Log</h3>
-
-<div style="max-height:300px;overflow-y:auto;background:white;border:1px solid #ccc;">
-<table id="auditTable">
-
-<thead>
-<tr>
-<th>User</th>
-<th>Employee</th>
-<th>Date</th>
-<th>Status</th>
-<th>Time</th>
-</tr>
-</thead>
-
-<tbody id="auditBody"></tbody>
-
-</table>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
 <script>
-
-const firebaseConfig = {
-apiKey: "AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
-authDomain: "rto-attendance-tracker-c18e8.firebaseapp.com",
-databaseURL: "https://rto-attendance-tracker-c18e8-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "rto-attendance-tracker-c18e8",
-storageBucket: "rto-attendance-tracker-c18e8.firebasestorage.app",
-messagingSenderId: "517181509229",
-appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-</script>
-
-<script>
-
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
 
 let employees=[]
 let daysInMonth=31
 let attendance={}
 
 function populateYears(){
-
 let yearSelect=document.getElementById("yearSelect")
 let currentYear=new Date().getFullYear()
 
 for(let y=2024;y<=2050;y++){
-
 let option=document.createElement("option")
 option.value=y
 option.text=y
-
 if(y===currentYear) option.selected=true
-
 yearSelect.appendChild(option)
-
+}
 }
 
+function setCurrentMonth(){
+let now=new Date()
+document.getElementById("monthSelect").value=now.getMonth()
 }
 
 function getDaysInMonth(year,month){
@@ -329,7 +89,6 @@ return new Date(year,month+1,0).getDate()
 }
 
 function generateHeader(){
-
 let table=document.getElementById("rtoTable")
 
 let header1=document.createElement("tr")
@@ -346,17 +105,37 @@ daysInMonth=getDaysInMonth(year,month)
 let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 
 for(let i=1;i<=daysInMonth;i++){
-
 let date=new Date(year,month,i)
-
 header1.innerHTML+=`<th>${i}</th>`
 header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
-
 }
-
 
 table.appendChild(header1)
 table.appendChild(header2)
+}
+
+function highlightTodayColumn(){
+
+let today=new Date()
+
+let month=parseInt(document.getElementById("monthSelect").value)
+let year=parseInt(document.getElementById("yearSelect").value)
+
+if(today.getMonth()!==month || today.getFullYear()!==year){
+return
+}
+
+let todayDate=today.getDate()
+let table=document.getElementById("rtoTable")
+
+let columnIndex=todayDate+1
+
+for(let row of table.rows){
+if(row.cells[columnIndex]){
+row.cells[columnIndex].style.background="#ff9800"
+row.cells[columnIndex].style.color="black"
+}
+}
 
 }
 
@@ -373,87 +152,12 @@ reloadEmployees()
 
 }
 
-function getCellColor(status){
-
-if(status=="RTO") return "RTO"
-if(status=="WFH") return "WFH"
-if(status=="Vacation Leave") return "Vacation"
-if(status=="Sick Leave") return "Sick"
-if(status=="Off") return "Off"
-
-return ""
-
-}
-
-function createDropdown(name,day){
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
-
-let key=name+"-"+year+"-"+month+"-"+day
-let saved=attendance[key] || ""
-
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off"]
-
-let html=`<select onchange="logStatus(this,'${name}','${day}')">`
-
-options.forEach(o=>{
-html+=`<option ${saved===o?"selected":""}>${o}</option>`
-})
-
-html+="</select>"
-
-return html
-
-}
-
-function addEmployee(){
-
-let name=document.getElementById("empName").value.trim()
-let team=document.getElementById("teamName").value.trim()
-
-if(name==""||team==""){
-alert("Enter employee name and team")
-return
-}
-
-db.ref("employees/"+name).set({
-name:name,
-team:team
-})
-
-document.getElementById("empName").value=""
-document.getElementById("teamName").value=""
-
-}
-
-
-function loadEmployees(){
-
-db.ref("employees").on("value",snapshot=>{
-
-employees=[]
-
-snapshot.forEach(child=>{
-employees.push(child.val())
-})
-
-reloadEmployees()
-
-})
-
-}
-
 function reloadEmployees(){
 
 let table=document.getElementById("rtoTable")
-
 table.innerHTML=""
 
 generateHeader()
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
 
 employees.forEach(emp=>{
 
@@ -465,247 +169,23 @@ row.insertCell(1).innerText=emp.team
 for(let i=1;i<=daysInMonth;i++){
 
 let cell=row.insertCell(i+1)
-
-cell.innerHTML=createDropdown(emp.name,i)
-
-let key=emp.name+"-"+year+"-"+month+"-"+i
-let saved=attendance[key]
-
-let color=getCellColor(saved)
-
-if(color) cell.classList.add(color)
+cell.innerHTML=""
 
 }
-
 
 })
 
-}
-
-function logStatus(select,name,day){
-
-let editor=document.getElementById("editor").value
-
-if(editor==""){
-alert("Enter checker name")
-select.value=""
-return
-}
-
-let status=select.value
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
-
-let key=name+"-"+year+"-"+month+"-"+day
-
-attendance[key]=status
-
-db.ref("attendance/"+key).set(status)
-
-let date=(parseInt(month)+1)+"/"+day+"/"+year
-
-fetch(SCRIPT_URL,{
-method:"POST",
-body:JSON.stringify({
-editor:editor,
-employee:name,
-date:date,
-status:status
-})
-})
+highlightTodayColumn()
 
 }
 
-function loadAttendance(){
-
-db.ref("attendance").once("value",snapshot=>{
-
-attendance=snapshot.val() || {}
-
-reloadEmployees()
-
-})
-
-}
-
-function loadLogs(){
-
-fetch(SCRIPT_URL)
-.then(res=>res.json())
-.then(data=>{
-
-let body=document.getElementById("auditBody")
-body.innerHTML=""
-
-data.reverse().forEach(row=>{
-
-let tr=document.createElement("tr")
-
-tr.innerHTML=`
-<td>${row[0]}</td>
-<td>${row[1]}</td>
-<td>${row[2]}</td>
-<td>${row[3]}</td>
-<td>${row[4]}</td>
-`
-
-body.appendChild(tr)
-
-})
-
-})
-
-}
-
-/* ===== EXPORT TO EXCEL FUNCTION ===== */
-
-function exportTable(){
-
-let table=document.getElementById("rtoTable")
-let rows=table.rows
-
-let html="<table border='1'>"
-
-for(let i=0;i<rows.length;i++){
-
-html+="<tr>"
-
-let cells=rows[i].cells
-
-for(let j=0;j<cells.length;j++){
-
-let cell=cells[j]
-let select=cell.querySelector("select")
-
-let value=""
-
-if(select){
-value=select.value || ""
-}else{
-value=cell.innerText || ""
-}
-
-html+="<td>"+value+"</td>"
-
-}
-
-html+="</tr>"
-
-}
-
-html+="</table>"
-
-let blob=new Blob([html],{
-type:"application/vnd.ms-excel"
-})
-
-let url=URL.createObjectURL(blob)
-
-let link=document.createElement("a")
-link.href=url
-link.download="RTO_Attendance_"+new Date().toISOString().slice(0,10)+".xls"
-
-document.body.appendChild(link)
-link.click()
-document.body.removeChild(link)
-
-URL.revokeObjectURL(url)
-
-}
-  
-/* ===== INIT ===== */
+/* INIT */
 
 populateYears()
+setCurrentMonth()
 changeMonth()
-loadEmployees()
-loadAttendance()
-loadLogs()
-
-setInterval(loadLogs,5000)
-
-/* COLUMN HIGHLIGHT */
-
-document.addEventListener("mouseover",function(e){
-
-if(e.target.tagName==="TD"){
-
-let table=document.getElementById("rtoTable")
-let column=e.target.cellIndex
-
-for(let row of table.rows){
-
-if(row.cells[column]){
-row.cells[column].classList.add("highlight-col")
-}
-
-}
-
-}
-
-})
-
-document.addEventListener("mouseout",function(e){
-
-if(e.target.tagName==="TD"){
-
-let table=document.getElementById("rtoTable")
-
-for(let row of table.rows){
-
-for(let cell of row.cells){
-cell.classList.remove("highlight-col")
-}
-
-}
-
-}
-
-})
-
-/* ===== COLUMN HIGHLIGHT ===== */
-
-document.addEventListener("mouseover",function(e){
-
-if(e.target.tagName==="TD"){
-
-let table=document.getElementById("rtoTable")
-let index=e.target.cellIndex
-
-for(let row of table.rows){
-
-if(row.cells[index]){
-row.cells[index].classList.add("highlight-col")
-}
-
-}
-
-}
-
-})
-
-document.addEventListener("mouseout",function(e){
-
-if(e.target.tagName==="TD"){
-
-let table=document.getElementById("rtoTable")
-
-for(let row of table.rows){
-
-for(let cell of row.cells){
-cell.classList.remove("highlight-col")
-}
-
-}
-
-}
-
-})
 
 </script>
 
 </body>
 </html>
-
-
-
