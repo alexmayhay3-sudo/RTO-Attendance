@@ -60,7 +60,27 @@ select{width:42px;font-size:10px;}
 <table id="rtoTable"></table>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <script>
+const firebaseConfig = {
+apiKey: "AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
+authDomain: "rto-attendance-tracker-c18e8.firebaseapp.com",
+databaseURL: "https://rto-attendance-tracker-c18e8-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "rto-attendance-tracker-c18e8",
+storageBucket: "rto-attendance-tracker-c18e8.firebasestorage.app",
+messagingSenderId: "517181509229",
+appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
+
+<script>
+
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
 
 let employees=[]
 let daysInMonth=31
@@ -69,7 +89,6 @@ let attendance={}
 function populateYears(){
 let yearSelect=document.getElementById("yearSelect")
 let currentYear=new Date().getFullYear()
-
 for(let y=2024;y<=2050;y++){
 let option=document.createElement("option")
 option.value=y
@@ -130,26 +149,63 @@ let table=document.getElementById("rtoTable")
 
 let columnIndex=todayDate+1
 
-for(let row of table.rows){
+for(let i=0;i<table.rows.length;i++){
+let row=table.rows[i]
 if(row.cells[columnIndex]){
 row.cells[columnIndex].style.background="#ff9800"
 row.cells[columnIndex].style.color="black"
 }
 }
-
 }
 
 function changeMonth(){
-
 let monthSelect=document.getElementById("monthSelect")
 let year=document.getElementById("yearSelect").value
-
 let monthName=monthSelect.options[monthSelect.selectedIndex].text
-
 document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
-
 reloadEmployees()
+}
 
+function getCellColor(status){
+if(status=="RTO") return "RTO"
+if(status=="WFH") return "WFH"
+if(status=="Vacation Leave") return "Vacation"
+if(status=="Sick Leave") return "Sick"
+if(status=="Off") return "Off"
+return ""
+}
+
+function createDropdown(name,day){
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+let key=name+"-"+year+"-"+month+"-"+day
+let saved=attendance[key] || ""
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off"]
+let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+options.forEach(o=>{
+html+=`<option ${saved===o?"selected":""}>${o}</option>`
+})
+html+="</select>"
+return html
+}
+
+function addEmployee(){
+let name=document.getElementById("empName").value.trim()
+let team=document.getElementById("teamName").value.trim()
+if(name==""||team==""){alert("Enter employee name and team");return}
+db.ref("employees/"+name).set({name:name,team:team})
+document.getElementById("empName").value=""
+document.getElementById("teamName").value=""
+}
+
+function loadEmployees(){
+db.ref("employees").on("value",snapshot=>{
+employees=[]
+snapshot.forEach(child=>{
+employees.push(child.val())
+})
+reloadEmployees()
+})
 }
 
 function reloadEmployees(){
@@ -158,6 +214,9 @@ let table=document.getElementById("rtoTable")
 table.innerHTML=""
 
 generateHeader()
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
 
 employees.forEach(emp=>{
 
@@ -169,14 +228,78 @@ row.insertCell(1).innerText=emp.team
 for(let i=1;i<=daysInMonth;i++){
 
 let cell=row.insertCell(i+1)
-cell.innerHTML=""
+
+cell.innerHTML=createDropdown(emp.name,i)
+
+let key=emp.name+"-"+year+"-"+month+"-"+i
+let saved=attendance[key]
+
+let color=getCellColor(saved)
+
+if(color) cell.classList.add(color)
 
 }
 
 })
 
-highlightTodayColumn()
+setTimeout(highlightTodayColumn,100)
 
+}
+
+function logStatus(select,name,day){
+
+let editor=document.getElementById("editor").value
+
+if(editor==""){
+alert("Enter checker name")
+select.value=""
+return
+}
+
+let status=select.value
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+
+attendance[key]=status
+
+db.ref("attendance/"+key).set(status)
+
+let date=(parseInt(month)+1)+"/"+day+"/"+year
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+editor:editor,
+employee:name,
+date:date,
+status:status
+})
+})
+
+}
+
+function loadAttendance(){
+db.ref("attendance").once("value",snapshot=>{
+attendance=snapshot.val() || {}
+reloadEmployees()
+})
+}
+
+function loadLogs(){
+fetch(SCRIPT_URL)
+.then(res=>res.json())
+.then(data=>{
+let body=document.getElementById("auditBody")
+body.innerHTML=""
+data.reverse().forEach(row=>{
+let tr=document.createElement("tr")
+tr.innerHTML=`<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`
+body.appendChild(tr)
+})
+})
 }
 
 /* INIT */
@@ -184,6 +307,11 @@ highlightTodayColumn()
 populateYears()
 setCurrentMonth()
 changeMonth()
+loadEmployees()
+loadAttendance()
+loadLogs()
+
+setInterval(loadLogs,5000)
 
 </script>
 
