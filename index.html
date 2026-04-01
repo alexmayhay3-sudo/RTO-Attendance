@@ -47,7 +47,7 @@ min-width:42px;
 transition:background .12s ease;
 }
 
-/* ROW COLORS */
+/* ZEBRA */
 
 #rtoTable tr:nth-child(even){background:#2f2f2f;}
 #rtoTable tr:nth-child(odd){background:#262626;}
@@ -69,7 +69,7 @@ background:#202020;
 z-index:2;
 }
 
-/* INPUTS */
+/* INPUT */
 
 input{
 padding:6px;
@@ -80,7 +80,7 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
-/* BUTTONS */
+/* BUTTON */
 
 button{
 padding:6px 12px;
@@ -91,9 +91,7 @@ background:#0f4c81;
 color:white;
 }
 
-button:hover{
-background:#1565a9;
-}
+button:hover{background:#1565a9;}
 
 /* 🔥 DROPDOWN FIX */
 
@@ -113,13 +111,7 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
-select:focus{
-outline:none;
-border-color:#0f4c81;
-box-shadow:0 0 3px #0f4c81;
-}
-
-/* STATUS COLORS */
+/* STATUS */
 
 .RTO{background:#1f6f43 !important;color:white;}
 .WFH{background:#176b87 !important;color:white;}
@@ -127,7 +119,7 @@ box-shadow:0 0 3px #0f4c81;
 .Sick{background:#6b4fb3 !important;color:white;}
 .Off{background:#a93232 !important;color:white;}
 
-/* TODAY HIGHLIGHT */
+/* TODAY */
 
 .today{
 background:#ff9800 !important;
@@ -166,8 +158,41 @@ color:black !important;
 
 <h3 id="currentMonth"></h3>
 
+<br>
+
+<h3>Add Employee</h3>
+
+<input id="empName" placeholder="Employee Name">
+<input id="teamName" placeholder="Team">
+
+<button onclick="addEmployee()">Add Employee</button>
+
+<br><br>
+
+<button onclick="exportTable()">Export to Excel</button>
+<button onclick="exportTodayRTO()">Export Today RTO</button>
+
+<br><br>
+
 <div class="container" style="overflow-x:auto">
 <table id="rtoTable"></table>
+</div>
+
+<h3>Audit Log</h3>
+
+<div style="max-height:300px;overflow-y:auto;background:white;border:1px solid #ccc;">
+<table id="auditTable">
+<thead>
+<tr>
+<th>User</th>
+<th>Employee</th>
+<th>Date</th>
+<th>Status</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody id="auditBody"></tbody>
+</table>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -188,11 +213,20 @@ appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
+
 let employees=[]
 let daysInMonth=31
 let attendance={}
 
-/* YEAR */
+/* AUTO MONTH */
+
+function setCurrentMonth(){
+let now=new Date()
+document.getElementById("monthSelect").value=now.getMonth()
+}
+
+/* YEARS */
 
 function populateYears(){
 let yearSelect=document.getElementById("yearSelect")
@@ -207,21 +241,15 @@ yearSelect.appendChild(option)
 }
 }
 
-/* AUTO MONTH */
-
-function setCurrentMonth(){
-let now=new Date()
-document.getElementById("monthSelect").value=now.getMonth()
-}
-
-/* HEADER */
+/* DAYS */
 
 function getDaysInMonth(year,month){
 return new Date(year,month+1,0).getDate()
 }
 
-function generateHeader(){
+/* HEADER */
 
+function generateHeader(){
 let table=document.getElementById("rtoTable")
 
 let header1=document.createElement("tr")
@@ -245,10 +273,9 @@ header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
 
 table.appendChild(header1)
 table.appendChild(header2)
-
 }
 
-/* TODAY HIGHLIGHT */
+/* TODAY */
 
 function highlightTodayColumn(){
 
@@ -271,53 +298,19 @@ if(row.cells[columnIndex]){
 row.cells[columnIndex].classList.add("today")
 }
 }
-
 }
 
-/* CHANGE MONTH */
+/* CHANGE */
 
 function changeMonth(){
-
 let monthSelect=document.getElementById("monthSelect")
 let year=document.getElementById("yearSelect").value
-
 let monthName=monthSelect.options[monthSelect.selectedIndex].text
-
 document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
-
 reloadEmployees()
-
 }
 
-/* RELOAD */
-
-function reloadEmployees(){
-
-let table=document.getElementById("rtoTable")
-
-table.innerHTML=""
-
-generateHeader()
-
-employees.forEach(emp=>{
-
-let row=table.insertRow()
-
-row.insertCell(0).innerText=emp.name
-row.insertCell(1).innerText=emp.team
-
-for(let i=1;i<=daysInMonth;i++){
-
-let cell=row.insertCell(i+1)
-cell.innerHTML="<select><option></option></select>"
-
-}
-
-})
-
-setTimeout(highlightTodayColumn,100)
-
-}
+/* KEEP YOUR ORIGINAL FUNCTIONS BELOW (UNCHANGED) */
 
 /* INIT */
 
