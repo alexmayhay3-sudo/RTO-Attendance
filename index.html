@@ -19,7 +19,30 @@ td{border:1px solid #3b3b3b;padding:3px;text-align:center;min-width:42px;}
 .highlight-col{background:#3a3f46 !important;}
 td:first-child, th:first-child{position:sticky;left:0;background:#202020;}
 td:nth-child(2), th:nth-child(2){position:sticky;left:120px;background:#202020;}
-select{width:42px;font-size:10px;}
+select{
+width:42px;
+font-size:10px;
+background:#2a2a2a;
+color:#e6e6e6;
+border:1px solid #555;
+border-radius:4px;
+appearance:none;
+-webkit-appearance:none;
+-moz-appearance:none;
+text-align:center;
+cursor:pointer;
+}
+
+select:focus{
+outline:none;
+border-color:#0f4c81;
+box-shadow:0 0 3px #0f4c81;
+}
+
+option{
+background:#2a2a2a;
+color:#e6e6e6;
+}
 .RTO{background:#1f6f43;color:white;}
 .WFH{background:#176b87;color:white;}
 .Vacation{background:#b88a1b;color:black;}
