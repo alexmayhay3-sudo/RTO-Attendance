@@ -87,6 +87,24 @@ background:#1b1b1b;
 border:1px solid #3a3a3a;
 padding:6px;
 }
+
+/* ===== CROSSHAIR EFFECT ===== */
+.crosshair-row td{
+background: rgba(255,255,255,0.05) !important;
+}
+
+.crosshair-col{
+background: rgba(255,255,255,0.08) !important;
+}
+
+/* Preserve status colors visibility */
+td.RTO.crosshair-col,
+td.WFH.crosshair-col,
+td.Vacation.crosshair-col,
+td.Sick.crosshair-col,
+td.Off.crosshair-col{
+filter: brightness(1.2);
+}
 </style>
 </head>
 
@@ -357,6 +375,41 @@ body.appendChild(tr)
 })
 }
 
+/* ===== CROSSHAIR FUNCTION ===== */
+function enableCrosshair(){
+let table = document.getElementById("rtoTable")
+
+table.addEventListener("mouseover", function(e){
+let cell = e.target.closest("td")
+if(!cell) return
+
+let row = cell.parentElement
+let colIndex = cell.cellIndex
+
+Array.from(table.rows).forEach(r => r.classList.remove("crosshair-row"))
+row.classList.add("crosshair-row")
+
+Array.from(table.rows).forEach(r=>{
+if(r.cells[colIndex]){
+r.cells[colIndex].classList.add("crosshair-col")
+}
+})
+})
+
+table.addEventListener("mouseout", function(e){
+let cell = e.target.closest("td")
+if(!cell) return
+
+let colIndex = cell.cellIndex
+
+Array.from(table.rows).forEach(r=>{
+if(r.cells[colIndex]){
+r.cells[colIndex].classList.remove("crosshair-col")
+}
+})
+})
+}
+
 /* EXPORT */
 function exportTable(){
 let table=document.getElementById("rtoTable")
@@ -408,6 +461,8 @@ changeMonth()
 loadEmployees()
 loadAttendance()
 loadLogs()
+
+enableCrosshair()
 
 setInterval(loadLogs,5000)
 
