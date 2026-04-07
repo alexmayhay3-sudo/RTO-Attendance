@@ -274,7 +274,7 @@ let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
 let key=name+"-"+year+"-"+month+"-"+day
 let saved=attendance[key] || ""
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off"]
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave"]
 
 let html=`<select onchange="logStatus(this,'${name}','${day}')">`
 options.forEach(o=>{
