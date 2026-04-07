@@ -71,6 +71,9 @@ color:#e6e6e6;
 .Vacation{background:#b88a1b;color:black;}
 .Sick{background:#6b4fb3;color:white;}
 .Off{background:#a93232;color:white;}
+.Emergency{background:#b88a1b;color:black;}
+.Charity{background:#b88a1b;color:black;}
+
 
 /* AUDIT TABLE */
 #auditTable{
@@ -102,6 +105,8 @@ td.RTO.crosshair-col,
 td.WFH.crosshair-col,
 td.Vacation.crosshair-col,
 td.Sick.crosshair-col,
+td.Emergency.crosshair-col,
+td.Charity.crosshair-col,
 td.Off.crosshair-col{
 filter: brightness(1.2);
 }
@@ -266,6 +271,9 @@ if(status=="WFH") return "WFH"
 if(status=="Vacation Leave") return "Vacation"
 if(status=="Sick Leave") return "Sick"
 if(status=="Off") return "Off"
+if(status=="Emergency Leave") return "Emergency"
+if(status=="Charity Leave") return "Charity"
+
 return ""
 }
 
