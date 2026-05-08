@@ -57,7 +57,7 @@ z-index:2;
 }
 
 select{
-width:58px;
+width:52px;
 font-size:10px;
 padding:2px;
 border-radius:3px;
@@ -74,42 +74,6 @@ color:#e6e6e6;
 .Emergency{background:#b88a1b;color:black;}
 .Charity{background:#b88a1b;color:black;}
 
-.week-separator{
-background:#111 !important;
-min-width:18px !important;
-border-left:2px solid #555 !important;
-border-right:2px solid #555 !important;
-}
-
-
-.crosshair-row td{
-background: rgba(255,255,255,0.05) !important;
-}
-
-.crosshair-col{
-background: rgba(255,255,255,0.12) !important;
-}
-
-td.RTO.crosshair-col,
-td.WFH.crosshair-col,
-td.Vacation.crosshair-col,
-td.Sick.crosshair-col,
-td.Emergency.crosshair-col,
-td.Charity.crosshair-col,
-td.Off.crosshair-col{
-filter: brightness(1.35) !important;
-}
-
-.team-header{
-background:#0b2f4f !important;
-color:white !important;
-font-weight:bold;
-text-align:left !important;
-padding:8px !important;
-font-size:13px;
-border-top:3px solid #4ea1ff !important;
-}
-
 #auditTable{
 width:100%;
 border-collapse:collapse;
@@ -125,12 +89,29 @@ border:1px solid #3a3a3a;
 padding:6px;
 }
 
-.notice{
-background:#182733;
-padding:10px;
-margin-bottom:12px;
-border-left:4px solid #4ea1ff;
-font-size:12px;
+.crosshair-row td{
+background: rgba(255,255,255,0.05) !important;
+}
+
+.crosshair-col{
+background: rgba(255,255,255,0.08) !important;
+}
+
+td.RTO.crosshair-col,
+td.WFH.crosshair-col,
+td.Vacation.crosshair-col,
+td.Sick.crosshair-col,
+td.Emergency.crosshair-col,
+td.Charity.crosshair-col,
+td.Off.crosshair-col{
+filter: brightness(1.2);
+}
+
+.week-separator{
+background:#111 !important;
+min-width:18px !important;
+border-left:2px solid #555 !important;
+border-right:2px solid #555 !important;
 }
 </style>
 </head>
@@ -138,11 +119,6 @@ font-size:12px;
 <body>
 
 <h2>RTO Attendance Tracker</h2>
-
-<div class="notice">
-NEW FEATURE: When you set an employee to OFF, you can make it recurring weekly from that date onward.
-Future schedule changes will NOT affect old historical months.
-</div>
 
 <label>Checker Name:</label>
 <input id="editor">
@@ -172,6 +148,7 @@ Future schedule changes will NOT affect old historical months.
 </select>
 
 <h3 id="currentMonth"></h3>
+<br>
 
 <button onclick="exportTable()">Export to Excel</button>
 
@@ -202,7 +179,6 @@ Future schedule changes will NOT affect old historical months.
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-
 const firebaseConfig = {
 apiKey: "AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
 authDomain: "rto-attendance-tracker-c18e8.firebaseapp.com",
@@ -214,47 +190,38 @@ appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
 
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
 
 let employees=[]
+let daysInMonth=31
 let attendance={}
-let offSchedules={}
 let visibleStartDay=1
 let visibleEndDay=31
-let daysInMonth=31
+let offSchedules={}
 
 function populateYears(){
-
 let yearSelect=document.getElementById("yearSelect")
 let currentYear=new Date().getFullYear()
 
 for(let y=2024;y<=2050;y++){
-
 let option=document.createElement("option")
-
 option.value=y
 option.text=y
 
-if(y===currentYear){
-option.selected=true
-}
+if(y===currentYear) option.selected=true
 
 yearSelect.appendChild(option)
 }
 }
 
 function setCurrentMonth(){
-
 let now=new Date()
-
 document.getElementById("monthSelect").value=now.getMonth()
 }
 
 function getDaysInMonth(year,month){
-
 return new Date(year,month+1,0).getDate()
 }
 
@@ -270,7 +237,6 @@ header2.innerHTML="<th></th><th></th>"
 
 let month=parseInt(document.getElementById("monthSelect").value)
 let year=parseInt(document.getElementById("yearSelect").value)
-
 let view=document.getElementById("viewMode").value
 
 daysInMonth=getDaysInMonth(year,month)
@@ -287,7 +253,6 @@ let today=new Date()
 if(today.getMonth()===month && today.getFullYear()===year){
 
 let currentDay=today.getDate()
-
 let currentDate=new Date(year,month,currentDay)
 
 visibleStartDay=currentDay-currentDate.getDay()
@@ -312,7 +277,6 @@ header1.innerHTML+=`<th>${i}</th>`
 header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
 
 if(date.getDay()===6){
-
 header1.innerHTML+=`<th class="week-separator"></th>`
 header2.innerHTML+=`<th class="week-separator"></th>`
 }
@@ -322,8 +286,6 @@ table.appendChild(header1)
 table.appendChild(header2)
 }
 
-
-
 function highlightTodayColumn(){
 
 let today=new Date()
@@ -331,9 +293,7 @@ let today=new Date()
 let month=parseInt(document.getElementById("monthSelect").value)
 let year=parseInt(document.getElementById("yearSelect").value)
 
-if(today.getMonth()!==month || today.getFullYear()!==year){
-return
-}
+if(today.getMonth()!==month || today.getFullYear()!==year) return
 
 let todayDate=today.getDate()
 
@@ -345,22 +305,13 @@ let row=table.rows[i]
 
 for(let j=0;j<row.cells.length;j++){
 
-let cell=row.cells[j]
-
-if(cell.innerText.trim()==todayDate.toString()){
-
-cell.style.background="#ff9800"
-cell.style.color="black"
-cell.style.fontWeight="bold"
+if(row.cells[j].innerText==todayDate){
+row.cells[j].style.background="#ff9800"
+row.cells[j].style.color="black"
 }
 }
 }
 }
-
-}
-}
-}
-
 
 function changeMonth(){
 
@@ -388,41 +339,6 @@ if(status=="Charity Leave") return "Charity"
 return ""
 }
 
-function getRecurringOff(name,year,month,day){
-
-let employeeRules=offSchedules[name]
-
-if(!employeeRules){
-return false
-}
-
-let currentDate=new Date(year,month,day)
-let weekday=currentDate.getDay()
-
-let matchedRule=null
-
-employeeRules.forEach(rule=>{
-
-let ruleDate=new Date(rule.effectiveDate)
-
-if(rule.weekday===weekday && currentDate>=ruleDate){
-
-if(!matchedRule){
-matchedRule=rule
-}else{
-
-let existingDate=new Date(matchedRule.effectiveDate)
-
-if(ruleDate>existingDate){
-matchedRule=rule
-}
-}
-}
-})
-
-return matchedRule ? true : false
-}
-
 function createDropdown(name,day){
 
 let month=document.getElementById("monthSelect").value
@@ -431,12 +347,6 @@ let year=document.getElementById("yearSelect").value
 let key=name+"-"+year+"-"+month+"-"+day
 
 let saved=attendance[key] || ""
-
-if(saved===""){
-if(getRecurringOff(name,parseInt(year),parseInt(month),day)){
-saved="Off"
-}
-}
 
 let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave"]
 
@@ -463,9 +373,8 @@ employees.push(child.val())
 
 reloadEmployees()
 })
-
-setTimeout(highlightTodayColumn,100)
 }
+
 
 function loadRecurringOff(){
 
@@ -475,9 +384,54 @@ offSchedules=snapshot.val() || {}
 
 reloadEmployees()
 })
-
-setTimeout(highlightTodayColumn,100)
 }
+
+function getRecurringOff(name,year,month,day){
+
+let employeeRules=offSchedules[name]
+
+if(!employeeRules){
+return false
+}
+
+let currentDate=new Date(year,month,day)
+
+let weekday=currentDate.getDay()
+
+let matched=false
+
+employeeRules.forEach(rule=>{
+
+let ruleDate=new Date(rule.effectiveDate)
+
+if(rule.weekday===weekday && currentDate>=ruleDate){
+matched=true
+}
+})
+
+return matched
+}
+
+function saveRecurringOff(name,year,month,day){
+
+let targetDate=new Date(year,month,day)
+
+let weekday=targetDate.getDay()
+
+let data={
+weekday:weekday,
+effectiveDate:targetDate.toISOString()
+}
+
+if(!offSchedules[name]){
+offSchedules[name]=[]
+}
+
+offSchedules[name].push(data)
+
+db.ref("offSchedules/"+name).set(offSchedules[name])
+}
+
 
 function reloadEmployees(){
 
@@ -501,26 +455,7 @@ return teamCompare
 return a.name.localeCompare(b.name)
 })
 
-let currentTeam=""
-
 sortedEmployees.forEach(emp=>{
-
-if(currentTeam!==emp.team){
-
-currentTeam=emp.team
-
-let teamRow=table.insertRow()
-
-let totalColumns=table.rows[0].cells.length
-
-let teamCell=teamRow.insertCell(0)
-
-teamCell.colSpan=totalColumns
-
-teamCell.innerText="TEAM: "+emp.team
-
-teamCell.classList.add("team-header")
-}
 
 let row=table.insertRow()
 
@@ -553,7 +488,7 @@ cell.classList.add(color)
 }
 
 if(recurringOff){
-cell.style.opacity="0.85"
+cell.style.opacity="0.90"
 cell.title="Auto recurring OFF"
 }
 
@@ -569,26 +504,8 @@ spacer.innerHTML=""
 }
 }
 })
-}
 
-function saveRecurringOff(name,year,month,day){
-
-let targetDate=new Date(year,month,day)
-
-let weekday=targetDate.getDay()
-
-let data={
-weekday:weekday,
-effectiveDate:targetDate.toISOString()
-}
-
-if(!offSchedules[name]){
-offSchedules[name]=[]
-}
-
-offSchedules[name].push(data)
-
-db.ref("offSchedules/"+name).set(offSchedules[name])
+setTimeout(highlightTodayColumn,100)
 }
 
 function logStatus(select,name,day){
@@ -615,7 +532,7 @@ db.ref("attendance/"+key).set(status)
 if(status==="Off"){
 
 let recurring=confirm(
-"Make this OFF recurring every week from this date onward?\n\nHistorical months will remain unchanged."
+"Make this OFF recurring weekly from this date onward?"
 )
 
 if(recurring){
@@ -660,19 +577,12 @@ data.reverse().forEach(row=>{
 
 let tr=document.createElement("tr")
 
-tr.innerHTML=`
-<td>${row[0]}</td>
-<td>${row[1]}</td>
-<td>${row[2]}</td>
-<td>${row[3]}</td>
-<td>${row[4]}</td>
-`
+tr.innerHTML=`<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`
 
 body.appendChild(tr)
 })
 })
 }
-
 
 function enableCrosshair(){
 
@@ -715,7 +625,6 @@ r.cells[colIndex].classList.remove("crosshair-col")
 })
 })
 }
-
 
 function exportTable(){
 
@@ -775,11 +684,12 @@ URL.revokeObjectURL(url)
 populateYears()
 setCurrentMonth()
 changeMonth()
-
 loadEmployees()
 loadAttendance()
 loadLogs()
 loadRecurringOff()
+
+enableCrosshair()
 
 setInterval(loadLogs,5000)
 
