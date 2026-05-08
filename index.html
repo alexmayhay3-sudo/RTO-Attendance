@@ -81,25 +81,6 @@ border-left:2px solid #555 !important;
 border-right:2px solid #555 !important;
 }
 
-
-.crosshair-row td{
-background: rgba(255,255,255,0.05) !important;
-}
-
-.crosshair-col{
-background: rgba(255,255,255,0.08) !important;
-}
-
-td.RTO.crosshair-col,
-td.WFH.crosshair-col,
-td.Vacation.crosshair-col,
-td.Sick.crosshair-col,
-td.Emergency.crosshair-col,
-td.Charity.crosshair-col,
-td.Off.crosshair-col{
-filter: brightness(1.2);
-}
-
 .team-header{
 background:#0b2f4f !important;
 color:white !important;
@@ -322,36 +303,6 @@ table.appendChild(header1)
 table.appendChild(header2)
 }
 
-
-function highlightTodayColumn(){
-
-let today=new Date()
-
-let month=parseInt(document.getElementById("monthSelect").value)
-let year=parseInt(document.getElementById("yearSelect").value)
-
-if(today.getMonth()!==month || today.getFullYear()!==year) return
-
-let todayDate=today.getDate()
-
-let table=document.getElementById("rtoTable")
-
-for(let i=0;i<table.rows.length;i++){
-
-let row=table.rows[i]
-
-for(let j=0;j<row.cells.length;j++){
-
-if(row.cells[j].innerText==todayDate){
-
-row.cells[j].style.background="#ff9800"
-row.cells[j].style.color="black"
-}
-}
-}
-}
-
-
 function changeMonth(){
 
 let monthSelect=document.getElementById("monthSelect")
@@ -453,8 +404,6 @@ employees.push(child.val())
 
 reloadEmployees()
 })
-
-setTimeout(highlightTodayColumn,100)
 }
 
 function loadRecurringOff(){
@@ -534,6 +483,8 @@ recurringOff=true
 }
 }
 
+cell.className=""
+
 let color=getCellColor(saved)
 
 if(color){
@@ -542,7 +493,6 @@ cell.classList.add(color)
 
 if(recurringOff){
 cell.style.opacity="0.85"
-cell.title="Auto recurring OFF"
 }
 
 let date=new Date(year,month,i)
@@ -660,50 +610,6 @@ body.appendChild(tr)
 })
 })
 }
-
-
-function enableCrosshair(){
-
-let table=document.getElementById("rtoTable")
-
-table.addEventListener("mouseover", function(e){
-
-let cell=e.target.closest("td")
-
-if(!cell) return
-
-let row=cell.parentElement
-let colIndex=cell.cellIndex
-
-Array.from(table.rows).forEach(r=>r.classList.remove("crosshair-row"))
-
-row.classList.add("crosshair-row")
-
-Array.from(table.rows).forEach(r=>{
-
-if(r.cells[colIndex]){
-r.cells[colIndex].classList.add("crosshair-col")
-}
-})
-})
-
-table.addEventListener("mouseout", function(e){
-
-let cell=e.target.closest("td")
-
-if(!cell) return
-
-let colIndex=cell.cellIndex
-
-Array.from(table.rows).forEach(r=>{
-
-if(r.cells[colIndex]){
-r.cells[colIndex].classList.remove("crosshair-col")
-}
-})
-})
-}
-
 
 function exportTable(){
 
