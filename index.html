@@ -338,26 +338,33 @@ let currentDate=new Date(year,month,currentDay)
 
 visibleStartDay=currentDay-currentDate.getDay()
 
-if(visibleStartDay<1){
+}else{
+
 visibleStartDay=1
 }
-
-visibleEndDay=visibleStartDay+6
-
-if(visibleEndDay>daysInMonth){
-visibleEndDay=daysInMonth
-}
-}
 }
 
-for(let i=visibleStartDay;i<=visibleEndDay;i++){
+let totalDays=view==="week" ? 7 : daysInMonth
 
-let date=new Date(year,month,i)
+for(let offset=0; offset<totalDays; offset++){
 
-header1.innerHTML+=`<th>${i}</th>`
-header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
+let actualDate
 
-if(date.getDay()===6){
+if(view==="week"){
+
+actualDate=new Date(year,month,visibleStartDay+offset)
+
+}else{
+
+actualDate=new Date(year,month,offset+1)
+}
+
+let displayDay=actualDate.getDate()
+
+header1.innerHTML+=`<th>${displayDay}</th>`
+header2.innerHTML+=`<th>${days[actualDate.getDay()]}</th>`
+
+if(actualDate.getDay()===6){
 
 header1.innerHTML+=`<th class="week-separator"></th>`
 header2.innerHTML+=`<th class="week-separator"></th>`
