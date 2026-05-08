@@ -105,6 +105,29 @@ font-size:13px;
 border-top:3px solid #4ea1ff !important;
 }
 
+.team-toggle{
+cursor:pointer;
+user-select:none;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.team-arrow{
+font-size:11px;
+transition:transform 0.2s ease;
+display:inline-block;
+width:12px;
+}
+
+.team-collapsed .team-arrow{
+transform:rotate(-90deg);
+}
+
+.hidden-team-row{
+display:none;
+}
+
 #auditTable{
 width:100%;
 border-collapse:collapse;
@@ -220,6 +243,34 @@ let offSchedules={}
 let visibleStartDay=1
 let visibleEndDay=31
 let daysInMonth=31
+let collapsedTeams={}
+
+function toggleTeam(team){
+
+collapsedTeams[team]=!collapsedTeams[team]
+
+let rows=document.querySelectorAll(`[data-team='${team}']`)
+
+rows.forEach(r=>{
+
+if(collapsedTeams[team]){
+r.classList.add("hidden-team-row")
+}else{
+r.classList.remove("hidden-team-row")
+}
+})
+
+let header=document.querySelector(`[data-team-header='${team}']`)
+
+if(header){
+
+if(collapsedTeams[team]){
+header.classList.add("team-collapsed")
+}else{
+header.classList.remove("team-collapsed")
+}
+}
+}
 
 function populateYears(){
 
@@ -464,18 +515,35 @@ currentTeam=emp.team
 
 let teamRow=table.insertRow()
 
+teamRow.setAttribute("data-team-header",emp.team)
+
 let totalColumns=table.rows[0].cells.length
 
 let teamCell=teamRow.insertCell(0)
 
 teamCell.colSpan=totalColumns
 
-teamCell.innerText="TEAM: "+emp.team
-
 teamCell.classList.add("team-header")
+
+if(collapsedTeams[emp.team]){
+teamRow.classList.add("team-collapsed")
+}
+
+teamCell.innerHTML=`
+<div class="team-toggle" onclick="toggleTeam('${emp.team}')">
+<span class="team-arrow">▼</span>
+<span>TEAM: ${emp.team}</span>
+</div>
+`
 }
 
 let row=table.insertRow()
+
+row.setAttribute("data-team",emp.team)
+
+if(collapsedTeams[emp.team]){
+row.classList.add("hidden-team-row")
+}
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
