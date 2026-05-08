@@ -66,25 +66,6 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
-.week-nav-btn{
-background:#0f4c81;
-color:white;
-border:none;
-border-radius:50%;
-width:34px;
-height:34px;
-font-size:18px;
-cursor:pointer;
-margin-left:5px;
-font-weight:bold;
-transition:0.2s;
-}
-
-.week-nav-btn:hover{
-background:#176b87;
-transform:scale(1.05);
-}
-
 .RTO{background:#1f6f43;color:white;}
 .WFH{background:#176b87;color:white;}
 .Vacation{background:#b88a1b;color:black;}
@@ -208,9 +189,6 @@ Future schedule changes will NOT affect old historical months.
 <option value="week" selected>Current Week</option>
 </select>
 
-<button class="week-nav-btn" onclick="changeWeek(-1)">←</button>
-<button class="week-nav-btn" onclick="changeWeek(1)">→</button>
-
 <h3 id="currentMonth"></h3>
 
 <button onclick="exportTable()">Export to Excel</button>
@@ -266,7 +244,6 @@ let visibleStartDay=1
 let visibleEndDay=31
 let daysInMonth=31
 let collapsedTeams={}
-let weekOffset=0
 
 function toggleTeam(team){
 
@@ -293,13 +270,6 @@ header.classList.add("team-collapsed")
 header.classList.remove("team-collapsed")
 }
 }
-}
-
-function changeWeek(direction){
-
-weekOffset += direction
-
-reloadEmployees()
 }
 
 function populateYears(){
@@ -360,26 +330,23 @@ if(view==="week"){
 
 let today=new Date()
 
-let baseDate
-
 if(today.getMonth()===month && today.getFullYear()===year){
-baseDate=new Date(year,month,today.getDate())
-}else{
-baseDate=new Date(year,month,1)
-}
 
-baseDate.setDate(baseDate.getDate() + (weekOffset * 7))
+let currentDay=today.getDate()
 
-visibleStartDay=baseDate.getDate()-baseDate.getDay()
+let currentDate=new Date(year,month,currentDay)
 
-visibleEndDay=visibleStartDay+6
+visibleStartDay=currentDay-currentDate.getDay()
 
 if(visibleStartDay<1){
 visibleStartDay=1
 }
 
+visibleEndDay=visibleStartDay+6
+
 if(visibleEndDay>daysInMonth){
 visibleEndDay=daysInMonth
+}
 }
 }
 
@@ -401,7 +368,430 @@ table.appendChild(header1)
 table.appendChild(header2)
 }
 
-/* REST OF YOUR SCRIPT REMAINS EXACTLY THE SAME */
+function changeMonth(){
+
+let monthSelect=document.getElementById("monthSelect")
+
+let year=document.getElementById("yearSelect").value
+
+let monthName=monthSelect.options[monthSelect.selectedIndex].text
+
+document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
+
+reloadEmployees()
+}
+
+function getCellColor(status){
+
+if(status=="RTO") return "RTO"
+if(status=="WFH") return "WFH"
+if(status=="Vacation Leave") return "Vacation"
+if(status=="Sick Leave") return "Sick"
+if(status=="Off") return "Off"
+if(status=="EL") return "Emergency"
+if(status=="Charity Leave") return "Charity"
+if(status=="WFH spec Req") return "WFHspecReq"
+if(status=="Offset") return "Offset"
+
+return ""
+}
+
+function getRecurringOff(name,year,month,day){
+
+let employeeRules=offSchedules[name]
+
+if(!employeeRules){
+return false
+}
+
+let currentDate=new Date(year,month,day)
+let weekday=currentDate.getDay()
+
+let matchedRule=null
+
+employeeRules.forEach(rule=>{
+
+let ruleDate=new Date(rule.effectiveDate)
+
+if(rule.weekday===weekday && currentDate>=ruleDate){
+
+if(!matchedRule){
+matchedRule=rule
+}else{
+
+let existingDate=new Date(matchedRule.effectiveDate)
+
+if(ruleDate>existingDate){
+matchedRule=rule
+}
+}
+}
+})
+
+return matchedRule ? true : false
+}
+
+function createDropdown(name,day){
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+
+let saved=attendance[key] || ""
+
+if(saved===""){
+if(getRecurringOff(name,parseInt(year),parseInt(month),day)){
+saved="Off"
+}
+}
+
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave","WFH spec Req","Offset"]
+
+let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+
+options.forEach(o=>{
+html+=`<option ${saved===o?"selected":""}>${o}</option>`
+})
+
+html+="</select>"
+
+return html
+}
+
+function loadEmployees(){
+
+db.ref("employees").on("value",snapshot=>{
+
+employees=[]
+
+snapshot.forEach(child=>{
+employees.push(child.val())
+})
+
+reloadEmployees()
+})
+}
+
+function loadRecurringOff(){
+
+db.ref("offSchedules").on("value",snapshot=>{
+
+offSchedules=snapshot.val() || {}
+
+reloadEmployees()
+})
+}
+
+function reloadEmployees(){
+
+let table=document.getElementById("rtoTable")
+
+table.innerHTML=""
+
+generateHeader()
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let sortedEmployees=[...employees].sort((a,b)=>{
+
+let teamCompare=a.team.localeCompare(b.team)
+
+if(teamCompare!==0){
+return teamCompare
+}
+
+return a.name.localeCompare(b.name)
+})
+
+let currentTeam=""
+
+sortedEmployees.forEach(emp=>{
+
+if(currentTeam!==emp.team){
+
+currentTeam=emp.team
+
+let teamRow=table.insertRow()
+
+teamRow.setAttribute("data-team-header",emp.team)
+
+let totalColumns=table.rows[0].cells.length
+
+let teamCell=teamRow.insertCell(0)
+
+teamCell.colSpan=totalColumns
+
+teamCell.classList.add("team-header")
+
+if(collapsedTeams[emp.team]){
+teamRow.classList.add("team-collapsed")
+}
+
+teamCell.innerHTML=`
+<div class="team-toggle" onclick="toggleTeam('${emp.team}')">
+<span class="team-arrow">▼</span>
+<span>TEAM: ${emp.team}</span>
+</div>
+`
+}
+
+let row=table.insertRow()
+
+row.setAttribute("data-team",emp.team)
+
+if(collapsedTeams[emp.team]){
+row.classList.add("hidden-team-row")
+}
+
+row.insertCell(0).innerText=emp.name
+row.insertCell(1).innerText=emp.team
+
+for(let i=visibleStartDay;i<=visibleEndDay;i++){
+
+let cell=row.insertCell(-1)
+
+cell.innerHTML=createDropdown(emp.name,i)
+
+let key=emp.name+"-"+year+"-"+month+"-"+i
+
+let saved=attendance[key]
+
+let recurringOff=false
+
+if(saved===""){
+if(getRecurringOff(emp.name,parseInt(year),parseInt(month),i)){
+saved="Off"
+recurringOff=true
+}
+}
+
+cell.className=""
+
+let color=getCellColor(saved)
+
+if(color){
+cell.classList.add(color)
+}
+
+if(recurringOff){
+cell.style.opacity="0.85"
+}
+
+let date=new Date(year,month,i)
+
+if(date.getDay()===6){
+
+let weekRTO=0
+
+for(let d=i-6; d<=i; d++){
+
+if(d<visibleStartDay) continue
+
+let tempKey=emp.name+"-"+year+"-"+month+"-"+d
+
+let tempSaved=attendance[tempKey]
+
+if(tempSaved===""){
+if(getRecurringOff(emp.name,parseInt(year),parseInt(month),d)){
+tempSaved="Off"
+}
+}
+
+if(
+tempSaved==="RTO" ||
+tempSaved==="Sick Leave" ||
+tempSaved==="Vacation Leave"
+){
+weekRTO++
+}
+}
+
+let spacer=row.insertCell(-1)
+
+spacer.classList.add("week-separator")
+
+spacer.innerHTML=weekRTO
+
+if(weekRTO<=3){
+spacer.classList.add("rto-count-low")
+}else{
+spacer.classList.add("rto-count-ok")
+}
+}
+}
+})
+}
+
+function saveRecurringOff(name,year,month,day){
+
+let targetDate=new Date(year,month,day)
+
+let weekday=targetDate.getDay()
+
+let data={
+weekday:weekday,
+effectiveDate:targetDate.toISOString()
+}
+
+if(!offSchedules[name]){
+offSchedules[name]=[]
+}
+
+offSchedules[name].push(data)
+
+db.ref("offSchedules/"+name).set(offSchedules[name])
+}
+
+function logStatus(select,name,day){
+
+let editor=document.getElementById("editor").value
+
+if(editor==""){
+alert("Enter checker name")
+select.value=""
+return
+}
+
+let status=select.value
+
+let month=document.getElementById("monthSelect").value
+let year=document.getElementById("yearSelect").value
+
+let key=name+"-"+year+"-"+month+"-"+day
+
+attendance[key]=status
+
+db.ref("attendance/"+key).set(status)
+
+if(status==="Off"){
+
+let recurring=confirm(
+"Make this OFF recurring every week from this date onward?\n\nHistorical months will remain unchanged."
+)
+
+if(recurring){
+saveRecurringOff(name,parseInt(year),parseInt(month),parseInt(day))
+}
+}
+
+let date=(parseInt(month)+1)+"/"+day+"/"+year
+
+fetch(SCRIPT_URL,{
+method:"POST",
+body:JSON.stringify({
+editor:editor,
+employee:name,
+date:date,
+status:status
+})
+})
+}
+
+function loadAttendance(){
+
+db.ref("attendance").once("value",snapshot=>{
+
+attendance=snapshot.val() || {}
+
+reloadEmployees()
+})
+}
+
+function loadLogs(){
+
+fetch(SCRIPT_URL)
+.then(res=>res.json())
+.then(data=>{
+
+let body=document.getElementById("auditBody")
+
+body.innerHTML=""
+
+data.reverse().forEach(row=>{
+
+let tr=document.createElement("tr")
+
+tr.innerHTML=`
+<td>${row[0]}</td>
+<td>${row[1]}</td>
+<td>${row[2]}</td>
+<td>${row[3]}</td>
+<td>${row[4]}</td>
+`
+
+body.appendChild(tr)
+})
+})
+}
+
+function exportTable(){
+
+let table=document.getElementById("rtoTable")
+
+let rows=table.rows
+
+let html="<table border='1'>"
+
+for(let i=0;i<rows.length;i++){
+
+html+="<tr>"
+
+let cells=rows[i].cells
+
+for(let j=0;j<cells.length;j++){
+
+let cell=cells[j]
+
+let select=cell.querySelector("select")
+
+let value=""
+
+if(select){
+value=select.value || ""
+}else{
+value=cell.innerText || ""
+}
+
+html+="<td>"+value+"</td>"
+}
+
+html+="</tr>"
+}
+
+html+="</table>"
+
+let blob=new Blob([html],{type:"application/vnd.ms-excel"})
+
+let url=URL.createObjectURL(blob)
+
+let link=document.createElement("a")
+
+link.href=url
+
+link.download="RTO_Attendance_"+new Date().toISOString().slice(0,10)+".xls"
+
+document.body.appendChild(link)
+
+link.click()
+
+document.body.removeChild(link)
+
+URL.revokeObjectURL(url)
+}
+
+populateYears()
+setCurrentMonth()
+changeMonth()
+
+loadEmployees()
+loadAttendance()
+loadLogs()
+loadRecurringOff()
+
+setInterval(loadLogs,5000)
+
 </script>
 
 </body>
