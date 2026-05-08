@@ -11,7 +11,9 @@ color:#e6e6e6;
 padding:30px;
 }
 
-.container{max-width:100%;}
+.container{
+max-width:100%;
+}
 
 table{
 border-collapse:collapse;
@@ -40,23 +42,22 @@ min-width:42px;
 #rtoTable tr:nth-child(even){background:#2f2f2f;}
 #rtoTable tr:nth-child(odd){background:#262626;}
 
-.highlight-col{background:#3a3f46 !important;}
-
 td:first-child, th:first-child{
 position:sticky;
 left:0;
 background:#202020;
+z-index:2;
 }
 
 td:nth-child(2), th:nth-child(2){
 position:sticky;
 left:120px;
 background:#202020;
+z-index:2;
 }
 
-/* DARK DROPDOWN */
 select{
-width:42px;
+width:52px;
 font-size:10px;
 padding:2px;
 border-radius:3px;
@@ -65,7 +66,6 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
-/* STATUS COLORS */
 .RTO{background:#1f6f43;color:white;}
 .WFH{background:#176b87;color:white;}
 .Vacation{background:#b88a1b;color:black;}
@@ -74,7 +74,6 @@ color:#e6e6e6;
 .Emergency{background:#b88a1b;color:black;}
 .Charity{background:#b88a1b;color:black;}
 
-/* AUDIT TABLE */
 #auditTable{
 width:100%;
 border-collapse:collapse;
@@ -90,7 +89,6 @@ border:1px solid #3a3a3a;
 padding:6px;
 }
 
-/* ===== CROSSHAIR EFFECT ===== */
 .crosshair-row td{
 background: rgba(255,255,255,0.05) !important;
 }
@@ -99,7 +97,6 @@ background: rgba(255,255,255,0.05) !important;
 background: rgba(255,255,255,0.08) !important;
 }
 
-/* Preserve status colors visibility */
 td.RTO.crosshair-col,
 td.WFH.crosshair-col,
 td.Vacation.crosshair-col,
@@ -110,7 +107,6 @@ td.Off.crosshair-col{
 filter: brightness(1.2);
 }
 
-/* WEEK SEPARATOR */
 .week-separator{
 background:#111 !important;
 min-width:18px !important;
@@ -145,6 +141,12 @@ border-right:2px solid #555 !important;
 
 <label>Year:</label>
 <select id="yearSelect" onchange="changeMonth()"></select>
+
+<label>View:</label>
+<select id="viewMode" onchange="reloadEmployees()">
+<option value="month">Full Month</option>
+<option value="week">Current Week</option>
+</select>
 
 <h3 id="currentMonth"></h3>
 <br>
@@ -196,15 +198,20 @@ const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSn
 let employees=[]
 let daysInMonth=31
 let attendance={}
+let visibleStartDay=1
+let visibleEndDay=31
 
 function populateYears(){
 let yearSelect=document.getElementById("yearSelect")
 let currentYear=new Date().getFullYear()
+
 for(let y=2024;y<=2050;y++){
 let option=document.createElement("option")
 option.value=y
 option.text=y
+
 if(y===currentYear) option.selected=true
+
 yearSelect.appendChild(option)
 }
 }
@@ -219,6 +226,7 @@ return new Date(year,month+1,0).getDate()
 }
 
 function generateHeader(){
+
 let table=document.getElementById("rtoTable")
 
 let header1=document.createElement("tr")
@@ -229,12 +237,39 @@ header2.innerHTML="<th></th><th></th>"
 
 let month=parseInt(document.getElementById("monthSelect").value)
 let year=parseInt(document.getElementById("yearSelect").value)
+let view=document.getElementById("viewMode").value
 
 daysInMonth=getDaysInMonth(year,month)
 
 let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 
-for(let i=1;i<=daysInMonth;i++){
+visibleStartDay=1
+visibleEndDay=daysInMonth
+
+if(view==="week"){
+
+let today=new Date()
+
+if(today.getMonth()===month && today.getFullYear()===year){
+
+let currentDay=today.getDate()
+let currentDate=new Date(year,month,currentDay)
+
+visibleStartDay=currentDay-currentDate.getDay()
+
+if(visibleStartDay<1){
+visibleStartDay=1
+}
+
+visibleEndDay=visibleStartDay+6
+
+if(visibleEndDay>daysInMonth){
+visibleEndDay=daysInMonth
+}
+}
+}
+
+for(let i=visibleStartDay;i<=visibleEndDay;i++){
 
 let date=new Date(year,month,i)
 
@@ -252,34 +287,47 @@ table.appendChild(header2)
 }
 
 function highlightTodayColumn(){
+
 let today=new Date()
+
 let month=parseInt(document.getElementById("monthSelect").value)
 let year=parseInt(document.getElementById("yearSelect").value)
 
 if(today.getMonth()!==month || today.getFullYear()!==year) return
 
 let todayDate=today.getDate()
+
 let table=document.getElementById("rtoTable")
-let columnIndex=todayDate+1
 
 for(let i=0;i<table.rows.length;i++){
+
 let row=table.rows[i]
-if(row.cells[columnIndex]){
-row.cells[columnIndex].style.background="#ff9800"
-row.cells[columnIndex].style.color="black"
+
+for(let j=0;j<row.cells.length;j++){
+
+if(row.cells[j].innerText==todayDate){
+row.cells[j].style.background="#ff9800"
+row.cells[j].style.color="black"
+}
 }
 }
 }
 
 function changeMonth(){
+
 let monthSelect=document.getElementById("monthSelect")
+
 let year=document.getElementById("yearSelect").value
+
 let monthName=monthSelect.options[monthSelect.selectedIndex].text
+
 document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
+
 reloadEmployees()
 }
 
 function getCellColor(status){
+
 if(status=="RTO") return "RTO"
 if(status=="WFH") return "WFH"
 if(status=="Vacation Leave") return "Vacation"
@@ -292,33 +340,45 @@ return ""
 }
 
 function createDropdown(name,day){
+
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
+
 let key=name+"-"+year+"-"+month+"-"+day
+
 let saved=attendance[key] || ""
+
 let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave"]
 
 let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+
 options.forEach(o=>{
 html+=`<option ${saved===o?"selected":""}>${o}</option>`
 })
+
 html+="</select>"
 
 return html
 }
 
 function loadEmployees(){
+
 db.ref("employees").on("value",snapshot=>{
+
 employees=[]
+
 snapshot.forEach(child=>{
 employees.push(child.val())
 })
+
 reloadEmployees()
 })
 }
 
 function reloadEmployees(){
+
 let table=document.getElementById("rtoTable")
+
 table.innerHTML=""
 
 generateHeader()
@@ -329,33 +389,45 @@ let year=document.getElementById("yearSelect").value
 let sortedEmployees=[...employees].sort((a,b)=>{
 
 let teamCompare=a.team.localeCompare(b.team)
-if(teamCompare!==0) return teamCompare
+
+if(teamCompare!==0){
+return teamCompare
+}
 
 return a.name.localeCompare(b.name)
 })
 
 sortedEmployees.forEach(emp=>{
+
 let row=table.insertRow()
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
 
-for(let i=1;i<=daysInMonth;i++){
+for(let i=visibleStartDay;i<=visibleEndDay;i++){
 
 let cell=row.insertCell(-1)
+
 cell.innerHTML=createDropdown(emp.name,i)
 
 let key=emp.name+"-"+year+"-"+month+"-"+i
+
 let saved=attendance[key]
 
 let color=getCellColor(saved)
-if(color) cell.classList.add(color)
+
+if(color){
+cell.classList.add(color)
+}
 
 let date=new Date(year,month,i)
 
 if(date.getDay()===6){
+
 let spacer=row.insertCell(-1)
+
 spacer.classList.add("week-separator")
+
 spacer.innerHTML=""
 }
 }
@@ -365,6 +437,7 @@ setTimeout(highlightTodayColumn,100)
 }
 
 function logStatus(select,name,day){
+
 let editor=document.getElementById("editor").value
 
 if(editor==""){
@@ -374,10 +447,12 @@ return
 }
 
 let status=select.value
+
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
 
 let key=name+"-"+year+"-"+month+"-"+day
+
 attendance[key]=status
 
 db.ref("attendance/"+key).set(status)
@@ -396,41 +471,55 @@ status:status
 }
 
 function loadAttendance(){
+
 db.ref("attendance").once("value",snapshot=>{
+
 attendance=snapshot.val() || {}
+
 reloadEmployees()
 })
 }
 
 function loadLogs(){
+
 fetch(SCRIPT_URL)
 .then(res=>res.json())
 .then(data=>{
+
 let body=document.getElementById("auditBody")
+
 body.innerHTML=""
+
 data.reverse().forEach(row=>{
+
 let tr=document.createElement("tr")
+
 tr.innerHTML=`<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td>`
+
 body.appendChild(tr)
 })
 })
 }
 
-/* ===== CROSSHAIR FUNCTION ===== */
 function enableCrosshair(){
-let table = document.getElementById("rtoTable")
+
+let table=document.getElementById("rtoTable")
 
 table.addEventListener("mouseover", function(e){
-let cell = e.target.closest("td")
+
+let cell=e.target.closest("td")
+
 if(!cell) return
 
-let row = cell.parentElement
-let colIndex = cell.cellIndex
+let row=cell.parentElement
+let colIndex=cell.cellIndex
 
-Array.from(table.rows).forEach(r => r.classList.remove("crosshair-row"))
+Array.from(table.rows).forEach(r=>r.classList.remove("crosshair-row"))
+
 row.classList.add("crosshair-row")
 
 Array.from(table.rows).forEach(r=>{
+
 if(r.cells[colIndex]){
 r.cells[colIndex].classList.add("crosshair-col")
 }
@@ -438,12 +527,15 @@ r.cells[colIndex].classList.add("crosshair-col")
 })
 
 table.addEventListener("mouseout", function(e){
-let cell = e.target.closest("td")
+
+let cell=e.target.closest("td")
+
 if(!cell) return
 
-let colIndex = cell.cellIndex
+let colIndex=cell.cellIndex
 
 Array.from(table.rows).forEach(r=>{
+
 if(r.cells[colIndex]){
 r.cells[colIndex].classList.remove("crosshair-col")
 }
@@ -451,22 +543,28 @@ r.cells[colIndex].classList.remove("crosshair-col")
 })
 }
 
-/* EXPORT */
 function exportTable(){
+
 let table=document.getElementById("rtoTable")
+
 let rows=table.rows
 
 let html="<table border='1'>"
 
 for(let i=0;i<rows.length;i++){
+
 html+="<tr>"
+
 let cells=rows[i].cells
 
 for(let j=0;j<cells.length;j++){
+
 let cell=cells[j]
+
 let select=cell.querySelector("select")
 
 let value=""
+
 if(select){
 value=select.value || ""
 }else{
@@ -482,20 +580,24 @@ html+="</tr>"
 html+="</table>"
 
 let blob=new Blob([html],{type:"application/vnd.ms-excel"})
+
 let url=URL.createObjectURL(blob)
 
 let link=document.createElement("a")
+
 link.href=url
+
 link.download="RTO_Attendance_"+new Date().toISOString().slice(0,10)+".xls"
 
 document.body.appendChild(link)
+
 link.click()
+
 document.body.removeChild(link)
 
 URL.revokeObjectURL(url)
 }
 
-/* INIT */
 populateYears()
 setCurrentMonth()
 changeMonth()
