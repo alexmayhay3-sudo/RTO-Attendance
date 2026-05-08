@@ -474,16 +474,25 @@ let key=emp.name+"-"+year+"-"+month+"-"+i
 
 let saved=attendance[key]
 
+let recurringOff=false
+
 if(saved===""){
 if(getRecurringOff(emp.name,parseInt(year),parseInt(month),i)){
 saved="Off"
+recurringOff=true
 }
 }
+
+cell.className=""
 
 let color=getCellColor(saved)
 
 if(color){
 cell.classList.add(color)
+}
+
+if(recurringOff){
+cell.style.opacity="0.85"
 }
 
 let date=new Date(year,month,i)
