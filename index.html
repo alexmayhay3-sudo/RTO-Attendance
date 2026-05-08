@@ -483,8 +483,6 @@ recurringOff=true
 }
 }
 
-cell.className=""
-
 let color=getCellColor(saved)
 
 if(color){
@@ -493,6 +491,7 @@ cell.classList.add(color)
 
 if(recurringOff){
 cell.style.opacity="0.85"
+cell.title="Auto recurring OFF"
 }
 
 let date=new Date(year,month,i)
