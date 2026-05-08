@@ -515,11 +515,38 @@ let date=new Date(year,month,i)
 
 if(date.getDay()===6){
 
+let weekRTO=0
+
+for(let d=i-6; d<=i; d++){
+
+if(d<visibleStartDay) continue
+
+let tempKey=emp.name+"-"+year+"-"+month+"-"+d
+
+let tempSaved=attendance[tempKey]
+
+if(tempSaved===""){
+if(getRecurringOff(emp.name,parseInt(year),parseInt(month),d)){
+tempSaved="Off"
+}
+}
+
+if(tempSaved==="RTO"){
+weekRTO++
+}
+}
+
 let spacer=row.insertCell(-1)
 
 spacer.classList.add("week-separator")
 
-spacer.innerHTML=""
+spacer.innerHTML=weekRTO
+
+if(weekRTO<=3){
+spacer.classList.add("rto-count-low")
+}else{
+spacer.classList.add("rto-count-ok")
+}
 }
 }
 })
