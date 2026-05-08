@@ -199,7 +199,6 @@ let daysInMonth=31
 let attendance={}
 let visibleStartDay=1
 let visibleEndDay=31
-let offSchedules={}
 
 function populateYears(){
 let yearSelect=document.getElementById("yearSelect")
@@ -375,64 +374,6 @@ reloadEmployees()
 })
 }
 
-
-function loadRecurringOff(){
-
-db.ref("offSchedules").on("value",snapshot=>{
-
-offSchedules=snapshot.val() || {}
-
-reloadEmployees()
-})
-}
-
-function getRecurringOff(name,year,month,day){
-
-let employeeRules=offSchedules[name]
-
-if(!employeeRules){
-return false
-}
-
-let currentDate=new Date(year,month,day)
-
-let weekday=currentDate.getDay()
-
-let matched=false
-
-employeeRules.forEach(rule=>{
-
-let ruleDate=new Date(rule.effectiveDate)
-
-if(rule.weekday===weekday && currentDate>=ruleDate){
-matched=true
-}
-})
-
-return matched
-}
-
-function saveRecurringOff(name,year,month,day){
-
-let targetDate=new Date(year,month,day)
-
-let weekday=targetDate.getDay()
-
-let data={
-weekday:weekday,
-effectiveDate:targetDate.toISOString()
-}
-
-if(!offSchedules[name]){
-offSchedules[name]=[]
-}
-
-offSchedules[name].push(data)
-
-db.ref("offSchedules/"+name).set(offSchedules[name])
-}
-
-
 function reloadEmployees(){
 
 let table=document.getElementById("rtoTable")
@@ -472,24 +413,10 @@ let key=emp.name+"-"+year+"-"+month+"-"+i
 
 let saved=attendance[key]
 
-let recurringOff=false
-
-if(saved===""){
-if(getRecurringOff(emp.name,parseInt(year),parseInt(month),i)){
-saved="Off"
-recurringOff=true
-}
-}
-
 let color=getCellColor(saved)
 
 if(color){
 cell.classList.add(color)
-}
-
-if(recurringOff){
-cell.style.opacity="0.90"
-cell.title="Auto recurring OFF"
 }
 
 let date=new Date(year,month,i)
@@ -528,17 +455,6 @@ let key=name+"-"+year+"-"+month+"-"+day
 attendance[key]=status
 
 db.ref("attendance/"+key).set(status)
-
-if(status==="Off"){
-
-let recurring=confirm(
-"Make this OFF recurring weekly from this date onward?"
-)
-
-if(recurring){
-saveRecurringOff(name,parseInt(year),parseInt(month),parseInt(day))
-}
-}
 
 let date=(parseInt(month)+1)+"/"+day+"/"+year
 
@@ -687,7 +603,6 @@ changeMonth()
 loadEmployees()
 loadAttendance()
 loadLogs()
-loadRecurringOff()
 
 enableCrosshair()
 
