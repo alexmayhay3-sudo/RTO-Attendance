@@ -599,7 +599,11 @@ tempSaved="Off"
 }
 }
 
-if(tempSaved==="RTO"){
+if(
+tempSaved==="RTO" ||
+tempSaved==="Sick Leave" ||
+tempSaved==="Vacation Leave"
+){
 weekRTO++
 }
 }
