@@ -74,6 +74,7 @@ color:#e6e6e6;
 .Emergency{background:#b88a1b;color:black;}
 .Charity{background:#b88a1b;color:black;}
 .WFHspecReq{background:#176b87;color:white;}
+.Offset{background:#b88a1b;color:black;}
 
 .week-separator{
 background:#111 !important;
@@ -327,6 +328,7 @@ if(status=="Off") return "Off"
 if(status=="Emergency Leave") return "Emergency"
 if(status=="Charity Leave") return "Charity"
 if(status=="WFHSpecial") return "WFHSpecial"
+if(status=="Offset Leave") return "Offset"
 
 return ""
 }
@@ -381,7 +383,7 @@ saved="Off"
 }
 }
 
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave","WFH spec Req"]
+let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave","WFH spec Req","Offset"]
 
 let html=`<select onchange="logStatus(this,'${name}','${day}')">`
 
