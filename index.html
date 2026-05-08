@@ -360,18 +360,27 @@ if(view==="week"){
 
 let today=new Date()
 
+let baseDate
+
 if(today.getMonth()===month && today.getFullYear()===year){
+baseDate=new Date(year,month,today.getDate())
+}else{
+baseDate=new Date(year,month,1)
+}
 
-let currentDay=today.getDate()
+baseDate.setDate(baseDate.getDate() + (weekOffset * 7))
 
-let currentDate=new Date(year,month,currentDay)
+visibleStartDay=baseDate.getDate()-baseDate.getDay()
 
-visibleStartDay=currentDay-currentDate.getDay()
-
-visibleStartDay += (weekOffset * 7)
+visibleEndDay=visibleStartDay+6
 
 if(visibleStartDay<1){
 visibleStartDay=1
+}
+
+if(visibleEndDay>daysInMonth){
+visibleEndDay=daysInMonth
+}
 }
 
 if(visibleStartDay>daysInMonth){
