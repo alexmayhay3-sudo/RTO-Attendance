@@ -66,6 +66,25 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
+.week-nav-btn{
+background:#0f4c81;
+color:white;
+border:none;
+border-radius:50%;
+width:34px;
+height:34px;
+font-size:18px;
+cursor:pointer;
+margin-left:5px;
+font-weight:bold;
+transition:0.2s;
+}
+
+.week-nav-btn:hover{
+background:#176b87;
+transform:scale(1.05);
+}
+
 .RTO{background:#1f6f43;color:white;}
 .WFH{background:#176b87;color:white;}
 .Vacation{background:#b88a1b;color:black;}
@@ -189,6 +208,9 @@ Future schedule changes will NOT affect old historical months.
 <option value="week" selected>Current Week</option>
 </select>
 
+<button class="week-nav-btn" onclick="changeWeek(-1)">←</button>
+<button class="week-nav-btn" onclick="changeWeek(1)">→</button>
+
 <h3 id="currentMonth"></h3>
 
 <button onclick="exportTable()">Export to Excel</button>
@@ -244,6 +266,7 @@ let visibleStartDay=1
 let visibleEndDay=31
 let daysInMonth=31
 let collapsedTeams={}
+let weekOffset=0
 
 function toggleTeam(team){
 
@@ -270,6 +293,13 @@ header.classList.add("team-collapsed")
 header.classList.remove("team-collapsed")
 }
 }
+}
+
+function changeWeek(direction){
+
+weekOffset += direction
+
+reloadEmployees()
 }
 
 function populateYears(){
@@ -338,6 +368,16 @@ let currentDate=new Date(year,month,currentDay)
 
 visibleStartDay=currentDay-currentDate.getDay()
 
+visibleStartDay += (weekOffset * 7)
+
+if(visibleStartDay<1){
+visibleStartDay=1
+}
+
+if(visibleStartDay>daysInMonth){
+visibleStartDay=daysInMonth-6
+}
+
 if(visibleStartDay<1){
 visibleStartDay=1
 }
@@ -369,6 +409,8 @@ table.appendChild(header2)
 }
 
 function changeMonth(){
+
+weekOffset=0
 
 let monthSelect=document.getElementById("monthSelect")
 
