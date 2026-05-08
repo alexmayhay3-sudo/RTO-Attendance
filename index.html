@@ -396,7 +396,66 @@ return teamCompare
 return a.name.localeCompare(b.name)
 })
 
+let currentTeam=""
+
 sortedEmployees.forEach(emp=>{
+
+if(currentTeam!==emp.team){
+
+currentTeam=emp.team
+
+let teamRow=table.insertRow()
+
+let totalColumns=document.getElementById("rtoTable").rows[0].cells.length
+
+let teamCell=teamRow.insertCell(0)
+
+teamCell.colSpan=totalColumns
+
+teamCell.innerText="TEAM: "+emp.team
+
+teamCell.style.background="#0b2f4f"
+teamCell.style.color="#ffffff"
+teamCell.style.fontWeight="bold"
+teamCell.style.textAlign="left"
+teamCell.style.padding="8px"
+teamCell.style.fontSize="13px"
+teamCell.style.borderTop="3px solid #4ea1ff"
+}
+
+let row=table.insertRow()
+
+row.insertCell(0).innerText=emp.name
+row.insertCell(1).innerText=emp.team
+
+for(let i=visibleStartDay;i<=visibleEndDay;i++){
+
+let cell=row.insertCell(-1)
+
+cell.innerHTML=createDropdown(emp.name,i)
+
+let key=emp.name+"-"+year+"-"+month+"-"+i
+
+let saved=attendance[key]
+
+let color=getCellColor(saved)
+
+if(color){
+cell.classList.add(color)
+}
+
+let date=new Date(year,month,i)
+
+if(date.getDay()===6){
+
+let spacer=row.insertCell(-1)
+
+spacer.classList.add("week-separator")
+
+spacer.innerHTML=""
+}
+}
+})
 
 let row=table.insertRow()
 
