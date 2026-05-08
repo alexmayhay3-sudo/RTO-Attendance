@@ -74,7 +74,6 @@ color:#e6e6e6;
 .Emergency{background:#b88a1b;color:black;}
 .Charity{background:#b88a1b;color:black;}
 
-
 /* AUDIT TABLE */
 #auditTable{
 width:100%;
@@ -109,6 +108,14 @@ td.Emergency.crosshair-col,
 td.Charity.crosshair-col,
 td.Off.crosshair-col{
 filter: brightness(1.2);
+}
+
+/* WEEK SEPARATOR */
+.week-separator{
+background:#111 !important;
+min-width:18px !important;
+border-left:2px solid #555 !important;
+border-right:2px solid #555 !important;
 }
 </style>
 </head>
@@ -228,9 +235,16 @@ daysInMonth=getDaysInMonth(year,month)
 let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 
 for(let i=1;i<=daysInMonth;i++){
+
 let date=new Date(year,month,i)
+
 header1.innerHTML+=`<th>${i}</th>`
 header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
+
+if(date.getDay()===6){
+header1.innerHTML+=`<th class="week-separator"></th>`
+header2.innerHTML+=`<th class="week-separator"></th>`
+}
 }
 
 table.appendChild(header1)
@@ -312,19 +326,38 @@ generateHeader()
 let month=document.getElementById("monthSelect").value
 let year=document.getElementById("yearSelect").value
 
-employees.forEach(emp=>{
+let sortedEmployees=[...employees].sort((a,b)=>{
+
+let teamCompare=a.team.localeCompare(b.team)
+if(teamCompare!==0) return teamCompare
+
+return a.name.localeCompare(b.name)
+})
+
+sortedEmployees.forEach(emp=>{
 let row=table.insertRow()
+
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
 
 for(let i=1;i<=daysInMonth;i++){
-let cell=row.insertCell(i+1)
+
+let cell=row.insertCell(-1)
 cell.innerHTML=createDropdown(emp.name,i)
 
 let key=emp.name+"-"+year+"-"+month+"-"+i
 let saved=attendance[key]
+
 let color=getCellColor(saved)
 if(color) cell.classList.add(color)
+
+let date=new Date(year,month,i)
+
+if(date.getDay()===6){
+let spacer=row.insertCell(-1)
+spacer.classList.add("week-separator")
+spacer.innerHTML=""
+}
 }
 })
 
