@@ -1,3 +1,8 @@
+# FULL UPDATED RTO TRACKER VERSION
+
+Replace your ENTIRE current HTML with the version below.
+
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,16 +13,47 @@ body{
 font-family:Segoe UI, Arial;
 background:#1e1e1e;
 color:#e6e6e6;
-padding:30px;
+padding:20px;
+margin:0;
 }
 
 .container{
 max-width:100%;
 }
 
+.toolbar{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+align-items:center;
+margin-bottom:15px;
+}
+
+button{
+background:#0f4c81;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1767ab;
+}
+
+input,select{
+padding:6px;
+border-radius:4px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#fff;
+}
+
 table{
 border-collapse:collapse;
-width:100%;
+width:max-content;
+min-width:100%;
 background:#2a2a2a;
 font-size:12px;
 }
@@ -30,34 +66,46 @@ padding:6px;
 position:sticky;
 top:0;
 z-index:3;
+white-space:nowrap;
 }
 
 td{
 border:1px solid #3b3b3b;
 padding:3px;
 text-align:center;
-min-width:42px;
+min-width:52px;
+white-space:nowrap;
 }
 
 #rtoTable tr:nth-child(even){background:#2f2f2f;}
 #rtoTable tr:nth-child(odd){background:#262626;}
 
-td:first-child, th:first-child{
+th:first-child,
+td:first-child{
 position:sticky;
 left:0;
+z-index:5;
 background:#202020;
-z-index:2;
+min-width:180px;
+max-width:180px;
 }
 
-td:nth-child(2), th:nth-child(2){
+th:nth-child(2),
+td:nth-child(2){
 position:sticky;
-left:120px;
+left:180px;
+z-index:5;
 background:#202020;
-z-index:2;
+min-width:120px;
+max-width:120px;
 }
 
-select{
-width:58px;
+.day-header{
+min-width:70px !important;
+}
+
+select.status-dropdown{
+width:70px;
 font-size:10px;
 padding:2px;
 border-radius:3px;
@@ -78,9 +126,10 @@ color:#e6e6e6;
 
 .week-separator{
 background:#111 !important;
-min-width:18px !important;
+min-width:45px !important;
 border-left:2px solid #555 !important;
 border-right:2px solid #555 !important;
+font-weight:bold;
 }
 
 .rto-count-low{
@@ -128,27 +177,53 @@ transform:rotate(-90deg);
 display:none;
 }
 
-#auditTable{
-width:100%;
-border-collapse:collapse;
-background:#2a2a2a;
-}
-
-#auditTable th{
-background:#1b1b1b;
-}
-
-#auditTable td{
-border:1px solid #3a3a3a;
-padding:6px;
-}
-
 .notice{
 background:#182733;
 padding:10px;
 margin-bottom:12px;
 border-left:4px solid #4ea1ff;
 font-size:12px;
+}
+
+.tabs{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+}
+
+.tab{
+padding:10px 15px;
+background:#2b2b2b;
+cursor:pointer;
+border-radius:5px;
+}
+
+.tab.active{
+background:#0f4c81;
+}
+
+.tab-content{
+display:none;
+}
+
+.tab-content.active{
+display:block;
+}
+
+.employee-form{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+flex-wrap:wrap;
+}
+
+.current-day{
+border:2px solid #4ea1ff !important;
+box-shadow:inset 0 0 0 1px #4ea1ff;
+}
+
+#rtoTable td:hover{
+outline:1px solid #888;
 }
 </style>
 </head>
@@ -158,10 +233,18 @@ font-size:12px;
 <h2>RTO Attendance Tracker</h2>
 
 <div class="notice">
-NEW FEATURE: When you set an employee to OFF, you can make it recurring weekly from that date onward.
-Future schedule changes will NOT affect old historical months.
+Cross-month weekly view is now supported.
+Example: May 31 to June 6 will display in ONE screen.
 </div>
 
+<div class="tabs">
+<div class="tab active" onclick="showTab('trackerTab',this)">Tracker</div>
+<div class="tab" onclick="showTab('employeeTab',this)">Employees</div>
+</div>
+
+<div id="trackerTab" class="tab-content active">
+
+<div class="toolbar">
 <label>Checker Name:</label>
 <input id="editor">
 
@@ -189,31 +272,39 @@ Future schedule changes will NOT affect old historical months.
 <option value="week" selected>Current Week</option>
 </select>
 
-<h3 id="currentMonth"></h3>
+<button onclick="previousWeek()">◀ Previous Week</button>
+<button onclick="nextWeek()">Next Week ▶</button>
 
-<button onclick="exportTable()">Export to Excel</button>
-
-<br><br>
-
-<div class="container" style="overflow-x:auto">
-<table id="rtoTable"></table>
+<button onclick="exportTable()">Export</button>
 </div>
 
-<h3>Audit Log</h3>
+<h3 id="currentMonth"></h3>
 
-<div style="max-height:300px;overflow-y:auto;background:#2a2a2a;border:1px solid #444;">
-<table id="auditTable">
+<div class="container" style="overflow:auto;max-height:75vh;">
+<table id="rtoTable"></table>
+</div>
+</div>
+
+<div id="employeeTab" class="tab-content">
+
+<h3>Employee Management</h3>
+
+<div class="employee-form">
+<input id="newEmployeeName" placeholder="Employee Name">
+<input id="newEmployeeTeam" placeholder="Team Name">
+<button onclick="addEmployee()">Add Employee</button>
+</div>
+
+<table>
 <thead>
 <tr>
-<th>User</th>
-<th>Employee</th>
-<th>Date</th>
-<th>Status</th>
-<th>Time</th>
+<th>Name</th>
+<th>Team</th>
 </tr>
 </thead>
-<tbody id="auditBody"></tbody>
+<tbody id="employeeBody"></tbody>
 </table>
+
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -221,66 +312,51 @@ Future schedule changes will NOT affect old historical months.
 
 <script>
 
-const firebaseConfig = {
-apiKey: "AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
-authDomain: "rto-attendance-tracker-c18e8.firebaseapp.com",
-databaseURL: "https://rto-attendance-tracker-c18e8-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "rto-attendance-tracker-c18e8",
-storageBucket: "rto-attendance-tracker-c18e8.firebasestorage.app",
-messagingSenderId: "517181509229",
-appId: "1:517181509229:web:7cfecdc0e4e985f3107964"
-};
+const firebaseConfig={
+apiKey:"AIzaSyDW7OSttX3WtwqcUIgSZkCWDLI-HCAgAMA",
+authDomain:"rto-attendance-tracker-c18e8.firebaseapp.com",
+databaseURL:"https://rto-attendance-tracker-c18e8-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId:"rto-attendance-tracker-c18e8",
+storageBucket:"rto-attendance-tracker-c18e8.firebasestorage.app",
+messagingSenderId:"517181509229",
+appId:"1:517181509229:web:7cfecdc0e4e985f3107964"
+}
 
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig)
 
-const db = firebase.database();
-
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxOvS_MxvPyjaL66O98RSnEB3Omz3G4a0Mh6WPNu3Zrs3M_NUi3FulIUvFTo0RsMlSAxA/exec"
+const db=firebase.database()
 
 let employees=[]
 let attendance={}
 let offSchedules={}
-let visibleStartDay=1
-let visibleEndDay=31
-let daysInMonth=31
 let collapsedTeams={}
+let visibleDates=[]
+let currentWeekStart=null
 
-function toggleTeam(team){
+function showTab(tabId,el){
 
-collapsedTeams[team]=!collapsedTeams[team]
-
-let rows=document.querySelectorAll(`[data-team='${team}']`)
-
-rows.forEach(r=>{
-
-if(collapsedTeams[team]){
-r.classList.add("hidden-team-row")
-}else{
-r.classList.remove("hidden-team-row")
-}
+document.querySelectorAll('.tab-content').forEach(t=>{
+t.classList.remove('active')
 })
 
-let header=document.querySelector(`[data-team-header='${team}']`)
 
-if(header){
+document.querySelectorAll('.tab').forEach(t=>{
+t.classList.remove('active')
+})
 
-if(collapsedTeams[team]){
-header.classList.add("team-collapsed")
-}else{
-header.classList.remove("team-collapsed")
-}
-}
+
+document.getElementById(tabId).classList.add('active')
+el.classList.add('active')
 }
 
 function populateYears(){
 
-let yearSelect=document.getElementById("yearSelect")
+let yearSelect=document.getElementById('yearSelect')
 let currentYear=new Date().getFullYear()
 
 for(let y=2024;y<=2050;y++){
 
-let option=document.createElement("option")
-
+let option=document.createElement('option')
 option.value=y
 option.text=y
 
@@ -296,104 +372,145 @@ function setCurrentMonth(){
 
 let now=new Date()
 
-document.getElementById("monthSelect").value=now.getMonth()
+document.getElementById('monthSelect').value=now.getMonth()
+
+currentWeekStart=getStartOfWeek(now)
 }
 
-function getDaysInMonth(year,month){
+function getStartOfWeek(date){
 
-return new Date(year,month+1,0).getDate()
+let d=new Date(date)
+
+let day=d.getDay()
+
+d.setDate(d.getDate()-day)
+
+d.setHours(0,0,0,0)
+
+return d
+}
+
+function previousWeek(){
+
+currentWeekStart.setDate(currentWeekStart.getDate()-7)
+
+syncSelectorsToWeek()
+
+reloadEmployees()
+}
+
+function nextWeek(){
+
+currentWeekStart.setDate(currentWeekStart.getDate()+7)
+
+syncSelectorsToWeek()
+
+reloadEmployees()
+}
+
+function syncSelectorsToWeek(){
+
+document.getElementById('monthSelect').value=currentWeekStart.getMonth()
+document.getElementById('yearSelect').value=currentWeekStart.getFullYear()
+}
+
+function changeMonth(){
+
+let month=parseInt(document.getElementById('monthSelect').value)
+let year=parseInt(document.getElementById('yearSelect').value)
+
+currentWeekStart=getStartOfWeek(new Date(year,month,1))
+
+reloadEmployees()
+}
+
+function generateVisibleDates(){
+
+visibleDates=[]
+
+let view=document.getElementById('viewMode').value
+
+let month=parseInt(document.getElementById('monthSelect').value)
+let year=parseInt(document.getElementById('yearSelect').value)
+
+if(view==='week'){
+
+let start=new Date(currentWeekStart)
+
+for(let i=0;i<7;i++){
+
+let d=new Date(start)
+
+d.setDate(start.getDate()+i)
+
+visibleDates.push(d)
+}
+
+}else{
+
+let daysInMonth=new Date(year,month+1,0).getDate()
+
+for(let d=1; d<=daysInMonth; d++){
+visibleDates.push(new Date(year,month,d))
+}
+}
 }
 
 function generateHeader(){
 
-let table=document.getElementById("rtoTable")
+let table=document.getElementById('rtoTable')
 
-let header1=document.createElement("tr")
-let header2=document.createElement("tr")
+let header1=document.createElement('tr')
+let header2=document.createElement('tr')
 
-header1.innerHTML="<th>Name</th><th>Team</th>"
-header2.innerHTML="<th></th><th></th>"
+header1.innerHTML='<th>Name</th><th>Team</th>'
+header2.innerHTML='<th></th><th></th>'
 
-let month=parseInt(document.getElementById("monthSelect").value)
-let year=parseInt(document.getElementById("yearSelect").value)
+let days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-let view=document.getElementById("viewMode").value
+visibleDates.forEach(date=>{
 
-daysInMonth=getDaysInMonth(year,month)
+let month=date.toLocaleString('default',{month:'short'})
 
-let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
-
-visibleStartDay=1
-visibleEndDay=daysInMonth
-
-if(view==="week"){
-
-let today=new Date()
-
-if(today.getMonth()===month && today.getFullYear()===year){
-
-let currentDay=today.getDate()
-
-let currentDate=new Date(year,month,currentDay)
-
-visibleStartDay=currentDay-currentDate.getDay()
-
-if(visibleStartDay<1){
-visibleStartDay=1
-}
-
-visibleEndDay=visibleStartDay+6
-
-if(visibleEndDay>daysInMonth){
-visibleEndDay=daysInMonth
-}
-}
-}
-
-for(let i=visibleStartDay;i<=visibleEndDay;i++){
-
-let date=new Date(year,month,i)
-
-header1.innerHTML+=`<th>${i}</th>`
-header2.innerHTML+=`<th>${days[date.getDay()]}</th>`
+header1.innerHTML+=`<th class='day-header'>${month} ${date.getDate()}</th>`
+header2.innerHTML+=`<th class='day-header'>${days[date.getDay()]}</th>`
 
 if(date.getDay()===6){
+header1.innerHTML+='<th class="week-separator">RTO</th>'
+header2.innerHTML+='<th class="week-separator">Count</th>'
+}
+})
 
-header1.innerHTML+=`<th class="week-separator"></th>`
-header2.innerHTML+=`<th class="week-separator"></th>`
-}
-}
+
+let start=visibleDates[0]
+let end=visibleDates[visibleDates.length-1]
+
+
+document.getElementById('currentMonth').innerText=
+`${start.toDateString()}  →  ${end.toDateString()}`
+
 
 table.appendChild(header1)
 table.appendChild(header2)
 }
 
-function changeMonth(){
-
-let monthSelect=document.getElementById("monthSelect")
-
-let year=document.getElementById("yearSelect").value
-
-let monthName=monthSelect.options[monthSelect.selectedIndex].text
-
-document.getElementById("currentMonth").innerText="Viewing: "+monthName+" "+year
-
-reloadEmployees()
+function getKey(name,date){
+return `${name}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 }
 
 function getCellColor(status){
 
-if(status=="RTO") return "RTO"
-if(status=="WFH") return "WFH"
-if(status=="Vacation Leave") return "Vacation"
-if(status=="Sick Leave") return "Sick"
-if(status=="Off") return "Off"
-if(status=="EL") return "Emergency"
-if(status=="Charity Leave") return "Charity"
-if(status=="WFH spec Req") return "WFHspecReq"
-if(status=="Offset") return "Offset"
+if(status=='RTO') return 'RTO'
+if(status=='WFH') return 'WFH'
+if(status=='Vacation Leave') return 'Vacation'
+if(status=='Sick Leave') return 'Sick'
+if(status=='Off') return 'Off'
+if(status=='EL') return 'Emergency'
+if(status=='Charity Leave') return 'Charity'
+if(status=='WFH spec Req') return 'WFHspecReq'
+if(status=='Offset') return 'Offset'
 
-return ""
+return ''
 }
 
 function getRecurringOff(name,year,month,day){
@@ -431,68 +548,94 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
-function createDropdown(name,day){
+function createDropdown(name,date){
 
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
+let key=getKey(name,date)
 
-let key=name+"-"+year+"-"+month+"-"+day
+let saved=attendance[key] || ''
 
-let saved=attendance[key] || ""
-
-if(saved===""){
-if(getRecurringOff(name,parseInt(year),parseInt(month),day)){
-saved="Off"
+if(saved===''){
+if(getRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())){
+saved='Off'
 }
 }
 
-let options=["","RTO","WFH","Vacation Leave","Sick Leave","Off","EL","Charity Leave","WFH spec Req","Offset"]
+let options=['','RTO','WFH','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset']
 
-let html=`<select onchange="logStatus(this,'${name}','${day}')">`
+let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
 options.forEach(o=>{
-html+=`<option ${saved===o?"selected":""}>${o}</option>`
+html+=`<option ${saved===o?'selected':''}>${o}</option>`
 })
 
-html+="</select>"
+html+='</select>'
 
 return html
 }
 
 function loadEmployees(){
 
-db.ref("employees").on("value",snapshot=>{
+ db.ref('employees').on('value',snapshot=>{
 
-employees=[]
+ employees=[]
 
-snapshot.forEach(child=>{
-employees.push(child.val())
-})
+ snapshot.forEach(child=>{
+ employees.push(child.val())
+ })
 
-reloadEmployees()
+ renderEmployeeList()
+ reloadEmployees()
+ })
+}
+
+function renderEmployeeList(){
+
+let body=document.getElementById('employeeBody')
+body.innerHTML=''
+
+employees.forEach(emp=>{
+
+let tr=document.createElement('tr')
+
+tr.innerHTML=`
+<td>${emp.name}</td>
+<td>${emp.team}</td>
+`
+
+body.appendChild(tr)
 })
 }
 
-function loadRecurringOff(){
+function addEmployee(){
 
-db.ref("offSchedules").on("value",snapshot=>{
+let name=document.getElementById('newEmployeeName').value.trim()
+let team=document.getElementById('newEmployeeTeam').value.trim()
 
-offSchedules=snapshot.val() || {}
+if(name==='' || team===''){
+alert('Complete employee details')
+return
+}
 
-reloadEmployees()
-})
+let data={
+name:name,
+team:team
+}
+
+ db.ref('employees').push(data)
+
+ document.getElementById('newEmployeeName').value=''
+ document.getElementById('newEmployeeTeam').value=''
 }
 
 function reloadEmployees(){
 
-let table=document.getElementById("rtoTable")
+let table=document.getElementById('rtoTable')
 
-table.innerHTML=""
+table.innerHTML=''
+
+generateVisibleDates()
 
 generateHeader()
-
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
 
 let sortedEmployees=[...employees].sort((a,b)=>{
 
@@ -505,7 +648,7 @@ return teamCompare
 return a.name.localeCompare(b.name)
 })
 
-let currentTeam=""
+let currentTeam=''
 
 sortedEmployees.forEach(emp=>{
 
@@ -515,23 +658,17 @@ currentTeam=emp.team
 
 let teamRow=table.insertRow()
 
-teamRow.setAttribute("data-team-header",emp.team)
+teamRow.setAttribute('data-team-header',emp.team)
 
 let totalColumns=table.rows[0].cells.length
 
 let teamCell=teamRow.insertCell(0)
-
 teamCell.colSpan=totalColumns
-
-teamCell.classList.add("team-header")
-
-if(collapsedTeams[emp.team]){
-teamRow.classList.add("team-collapsed")
-}
+teamCell.classList.add('team-header')
 
 teamCell.innerHTML=`
-<div class="team-toggle" onclick="toggleTeam('${emp.team}')">
-<span class="team-arrow">▼</span>
+<div class='team-toggle' onclick="toggleTeam('${emp.team}')">
+<span class='team-arrow'>▼</span>
 <span>TEAM: ${emp.team}</span>
 </div>
 `
@@ -539,35 +676,28 @@ teamCell.innerHTML=`
 
 let row=table.insertRow()
 
-row.setAttribute("data-team",emp.team)
-
-if(collapsedTeams[emp.team]){
-row.classList.add("hidden-team-row")
-}
+row.setAttribute('data-team',emp.team)
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
 
-for(let i=visibleStartDay;i<=visibleEndDay;i++){
+let weekRTO=0
+
+visibleDates.forEach(date=>{
 
 let cell=row.insertCell(-1)
 
-cell.innerHTML=createDropdown(emp.name,i)
+cell.innerHTML=createDropdown(emp.name,date)
 
-let key=emp.name+"-"+year+"-"+month+"-"+i
+let key=getKey(emp.name,date)
 
 let saved=attendance[key]
 
-let recurringOff=false
-
-if(saved===""){
-if(getRecurringOff(emp.name,parseInt(year),parseInt(month),i)){
-saved="Off"
-recurringOff=true
+if(saved===''){
+if(getRecurringOff(emp.name,date.getFullYear(),date.getMonth(),date.getDate())){
+saved='Off'
 }
 }
-
-cell.className=""
 
 let color=getCellColor(saved)
 
@@ -575,51 +705,53 @@ if(color){
 cell.classList.add(color)
 }
 
-if(recurringOff){
-cell.style.opacity="0.85"
-}
+let today=new Date()
 
-let date=new Date(year,month,i)
-
-if(date.getDay()===6){
-
-let weekRTO=0
-
-for(let d=i-6; d<=i; d++){
-
-if(d<visibleStartDay) continue
-
-let tempKey=emp.name+"-"+year+"-"+month+"-"+d
-
-let tempSaved=attendance[tempKey]
-
-if(tempSaved===""){
-if(getRecurringOff(emp.name,parseInt(year),parseInt(month),d)){
-tempSaved="Off"
-}
+if(
+ today.getDate()===date.getDate() &&
+ today.getMonth()===date.getMonth() &&
+ today.getFullYear()===date.getFullYear()
+){
+cell.classList.add('current-day')
 }
 
 if(
-tempSaved==="RTO" ||
-tempSaved==="Sick Leave" ||
-tempSaved==="Vacation Leave"
+saved==='RTO' ||
+saved==='Sick Leave' ||
+saved==='Vacation Leave'
 ){
 weekRTO++
 }
-}
+
+if(date.getDay()===6){
 
 let spacer=row.insertCell(-1)
 
-spacer.classList.add("week-separator")
-
+spacer.classList.add('week-separator')
 spacer.innerHTML=weekRTO
 
 if(weekRTO<=3){
-spacer.classList.add("rto-count-low")
+spacer.classList.add('rto-count-low')
 }else{
-spacer.classList.add("rto-count-ok")
+spacer.classList.add('rto-count-ok')
 }
 }
+})
+})
+}
+
+function toggleTeam(team){
+
+collapsedTeams[team]=!collapsedTeams[team]
+
+let rows=document.querySelectorAll(`[data-team='${team}']`)
+
+rows.forEach(r=>{
+
+if(collapsedTeams[team]){
+r.classList.add('hidden-team-row')
+}else{
+r.classList.remove('hidden-team-row')
 }
 })
 }
@@ -641,94 +773,66 @@ offSchedules[name]=[]
 
 offSchedules[name].push(data)
 
-db.ref("offSchedules/"+name).set(offSchedules[name])
+ db.ref('offSchedules/'+name).set(offSchedules[name])
 }
 
-function logStatus(select,name,day){
+function logStatus(select,name,dateString){
 
-let editor=document.getElementById("editor").value
+let editor=document.getElementById('editor').value
 
-if(editor==""){
-alert("Enter checker name")
-select.value=""
+if(editor===''){
+alert('Enter checker name')
+select.value=''
 return
 }
 
 let status=select.value
 
-let month=document.getElementById("monthSelect").value
-let year=document.getElementById("yearSelect").value
+let date=new Date(dateString)
 
-let key=name+"-"+year+"-"+month+"-"+day
+let key=getKey(name,date)
 
 attendance[key]=status
 
-db.ref("attendance/"+key).set(status)
+ db.ref('attendance/'+key).set(status)
 
-if(status==="Off"){
+if(status==='Off'){
 
 let recurring=confirm(
-"Make this OFF recurring every week from this date onward?\n\nHistorical months will remain unchanged."
+'Make this OFF recurring every week from this date onward?'
 )
 
 if(recurring){
-saveRecurringOff(name,parseInt(year),parseInt(month),parseInt(day))
+saveRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())
 }
 }
 
-let date=(parseInt(month)+1)+"/"+day+"/"+year
-
-fetch(SCRIPT_URL,{
-method:"POST",
-body:JSON.stringify({
-editor:editor,
-employee:name,
-date:date,
-status:status
-})
-})
+reloadEmployees()
 }
 
 function loadAttendance(){
 
-db.ref("attendance").once("value",snapshot=>{
+ db.ref('attendance').once('value',snapshot=>{
 
-attendance=snapshot.val() || {}
+ attendance=snapshot.val() || {}
 
-reloadEmployees()
-})
+ reloadEmployees()
+ })
 }
 
-function loadLogs(){
+function loadRecurringOff(){
 
-fetch(SCRIPT_URL)
-.then(res=>res.json())
-.then(data=>{
+ db.ref('offSchedules').on('value',snapshot=>{
 
-let body=document.getElementById("auditBody")
+ offSchedules=snapshot.val() || {}
 
-body.innerHTML=""
-
-data.reverse().forEach(row=>{
-
-let tr=document.createElement("tr")
-
-tr.innerHTML=`
-<td>${row[0]}</td>
-<td>${row[1]}</td>
-<td>${row[2]}</td>
-<td>${row[3]}</td>
-<td>${row[4]}</td>
-`
-
-body.appendChild(tr)
-})
-})
+ reloadEmployees()
+ })
 }
 
 function exportTable(){
 
-let table=document.getElementById("rtoTable")
+let table=document.getElementById('rtoTable')
 
 let rows=table.rows
 
@@ -736,7 +840,7 @@ let html="<table border='1'>"
 
 for(let i=0;i<rows.length;i++){
 
-html+="<tr>"
+html+='<tr>'
 
 let cells=rows[i].cells
 
@@ -744,33 +848,32 @@ for(let j=0;j<cells.length;j++){
 
 let cell=cells[j]
 
-let select=cell.querySelector("select")
+let select=cell.querySelector('select')
 
-let value=""
+let value=''
 
 if(select){
-value=select.value || ""
+value=select.value || ''
 }else{
-value=cell.innerText || ""
+value=cell.innerText || ''
 }
 
-html+="<td>"+value+"</td>"
+html+='<td>'+value+'</td>'
 }
 
-html+="</tr>"
+html+='</tr>'
 }
 
-html+="</table>"
+html+='</table>'
 
-let blob=new Blob([html],{type:"application/vnd.ms-excel"})
+let blob=new Blob([html],{type:'application/vnd.ms-excel'})
 
 let url=URL.createObjectURL(blob)
 
-let link=document.createElement("a")
+let link=document.createElement('a')
 
 link.href=url
-
-link.download="RTO_Attendance_"+new Date().toISOString().slice(0,10)+".xls"
+link.download='RTO_Attendance.xls'
 
 document.body.appendChild(link)
 
@@ -783,16 +886,13 @@ URL.revokeObjectURL(url)
 
 populateYears()
 setCurrentMonth()
-changeMonth()
-
 loadEmployees()
 loadAttendance()
-loadLogs()
 loadRecurringOff()
-
-setInterval(loadLogs,5000)
+reloadEmployees()
 
 </script>
 
 </body>
 </html>
+```
