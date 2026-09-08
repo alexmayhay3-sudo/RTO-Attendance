@@ -383,12 +383,12 @@ let attendance={}
 let offSchedules={}
 let shiftSchedules={}
 let wfhComments={}
-let othersComments={} // NEW: For OTHERS comments
+let othersComments={}
 let collapsedTeams={}
 let visibleDates=[]
 let currentWeekStart=null
 let currentDayView=null
-let employeeShiftHistory = {} // NEW: Store shift change history per employee
+let employeeShiftHistory = {}
 
 function showTab(tabId,el){
 
@@ -677,7 +677,6 @@ function getShiftForDate(name, date){
         recordDate.setHours(0,0,0,0);
         
         if(recordDate <= targetDate){
-            // Only apply if the change date is on or before the target date
             if(!selectedDate || recordDate > selectedDate){
                 selectedDate = recordDate;
                 selectedShift = record.shift;
@@ -718,7 +717,6 @@ saved='Off'
 }
 }
 
-// UPDATED: Added 'Unknown' and 'OTHERS' options
 let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
 
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
@@ -776,7 +774,7 @@ function updateShift(name,newShift){
 }
 
 function createShiftDropdown(name, date){
-    // Get shift based on date
+    // Get shift based on the specific date
     let currentShift = getShiftForDate(name, date);
     
     let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)">`;
@@ -929,9 +927,11 @@ row.setAttribute('data-shift',empShift)
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
 
-// For shift column, use the first visible date to determine shift
-let firstDate = visibleDates[0] || new Date();
+// We'll create the shift dropdown per date instead of a single one
+// So we'll skip the shift column for now and add it per day
 let shiftCell = row.insertCell(2);
+// Use the first visible date for the dropdown
+let firstDate = visibleDates[0] || new Date();
 shiftCell.innerHTML = createShiftDropdown(emp.name, firstDate);
 
 let weekRTO=0
@@ -973,7 +973,6 @@ if(saved==='WFH spec Req' || saved==='OTHERS'){
 let commentKey = '';
 let comment = '';
 let commentType = '';
-let commentData = {};
 let icon = '';
 let popupComment = '';
 let iconTitle = '';
@@ -999,7 +998,6 @@ popupComment = comment || 'No comment';
 cell.innerHTML += icon;
 cell.innerHTML += `<div class="comment-popup">${popupComment}</div>`;
 
-// Store comment key for export
 cell.setAttribute('data-comment-key', commentKey);
 cell.setAttribute('data-comment-type', commentType);
 }
@@ -1096,7 +1094,6 @@ saveRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())
 }
 }
 
-// Updated: Handle WFH spec Req and OTHERS comments
 if(status==='WFH spec Req'){
 let comment=prompt('Please provide a short explanation for WFH special request:')
 if(comment!==null && comment.trim()!==''){
