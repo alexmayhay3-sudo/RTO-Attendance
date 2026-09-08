@@ -119,6 +119,16 @@ background:#1f1f1f;
 color:#e6e6e6;
 }
 
+select.shift-dropdown{
+width:70px;
+font-size:10px;
+padding:2px;
+border-radius:3px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
+}
+
 .RTO{background:#1f6f43;color:white;}
 .WFH{background:#176b87;color:white;}
 .Vacation{background:#b88a1b;color:black;}
@@ -348,7 +358,6 @@ Please DO NOT share this link with individuals who are not required to edit or m
 <input id="newEmployeeName" placeholder="Employee Name">
 <input id="newEmployeeTeam" placeholder="Team Name">
 <select id="newEmployeeShift" style="padding:6px;border-radius:4px;border:1px solid #555;background:#1f1f1f;color:#fff;">
-<option value="">Select Shift</option>
 <option value="APAC">APAC</option>
 <option value="EMEA">EMEA</option>
 <option value="US">US</option>
@@ -570,6 +579,10 @@ function getKey(name,date){
 return `${name}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 }
 
+function getShiftKey(name){
+return `${name}-shift`
+}
+
 function getCellColor(status){
 
 if(status=='RTO') return 'RTO'
@@ -620,6 +633,18 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
+function getDefaultShift(name){
+
+let shiftKey=getShiftKey(name)
+
+if(shiftSchedules[shiftKey]){
+return shiftSchedules[shiftKey]
+}
+
+let employee=employees.find(e=>e.name===name)
+return employee ? employee.shift || 'APAC' : 'APAC'
+}
+
 function createDropdown(name,date){
 
 let key=getKey(name,date)
@@ -643,6 +668,41 @@ html+=`<option ${saved===o?'selected':''}>${o}</option>`
 html+='</select>'
 
 return html
+}
+
+function createShiftDropdown(name){
+
+let currentShift=getDefaultShift(name)
+
+let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)" style="width:65px;font-size:9px;">`
+
+let shifts=['APAC','EMEA','US']
+
+shifts.forEach(s=>{
+html+=`<option ${currentShift===s?'selected':''}>${s}</option>`
+})
+
+html+='</select>'
+
+return html
+}
+
+function updateShift(name,newShift){
+
+let editor=document.getElementById('editor').value
+
+if(editor===''){
+alert('Enter checker name first')
+return
+}
+
+let shiftKey=getShiftKey(name)
+
+shiftSchedules[shiftKey]=newShift
+
+db.ref('shiftSchedules/'+shiftKey).set(newShift)
+
+reloadEmployees()
 }
 
 function loadEmployees(){
@@ -669,14 +729,41 @@ employees.forEach(emp=>{
 
 let tr=document.createElement('tr')
 
+let shiftKey=getShiftKey(emp.name)
+let currentShift=shiftSchedules[shiftKey] || emp.shift || 'APAC'
+
 tr.innerHTML=`
 <td>${emp.name}</td>
 <td>${emp.team}</td>
-<td><span class="shift-badge shift-${emp.shift||'APAC'}">${emp.shift||'APAC'}</span></td>
+<td>
+<select onchange="updateShiftFromEmployee('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
+<option ${currentShift==='APAC'?'selected':''}>APAC</option>
+<option ${currentShift==='EMEA'?'selected':''}>EMEA</option>
+<option ${currentShift==='US'?'selected':''}>US</option>
+</select>
+</td>
 `
 
 body.appendChild(tr)
 })
+}
+
+function updateShiftFromEmployee(name,newShift){
+
+let editor=document.getElementById('editor').value
+
+if(editor===''){
+alert('Enter checker name first')
+return
+}
+
+let shiftKey=getShiftKey(name)
+
+shiftSchedules[shiftKey]=newShift
+
+db.ref('shiftSchedules/'+shiftKey).set(newShift)
+
+reloadEmployees()
 }
 
 function addEmployee(){
@@ -720,12 +807,17 @@ if(teamCompare!==0){
 return teamCompare
 }
 
-let shiftOrder={APAC:0,EMEA:1,US:2}
-let shiftA=shiftOrder[a.shift]||0
-let shiftB=shiftOrder[b.shift]||0
+let shiftKeyA=getShiftKey(a.name)
+let shiftKeyB=getShiftKey(b.name)
+let shiftA=shiftSchedules[shiftKeyA] || a.shift || 'APAC'
+let shiftB=shiftSchedules[shiftKeyB] || b.shift || 'APAC'
 
-if(shiftA!==shiftB){
-return shiftA-shiftB
+let shiftOrder={APAC:0,EMEA:1,US:2}
+let shiftAOrder=shiftOrder[shiftA]||0
+let shiftBOrder=shiftOrder[shiftB]||0
+
+if(shiftAOrder!==shiftBOrder){
+return shiftAOrder-shiftBOrder
 }
 
 return a.name.localeCompare(b.name)
@@ -759,14 +851,17 @@ teamCell.innerHTML=`
 `
 }
 
-if(currentShift!==emp.shift){
+let shiftKey=getShiftKey(emp.name)
+let empShift=shiftSchedules[shiftKey] || emp.shift || 'APAC'
 
-currentShift=emp.shift
+if(currentShift!==empShift){
+
+currentShift=empShift
 
 let shiftRow=table.insertRow()
 
 shiftRow.setAttribute('data-team',emp.team)
-shiftRow.setAttribute('data-shift',emp.shift)
+shiftRow.setAttribute('data-shift',empShift)
 
 let totalColumns=table.rows[0].cells.length
 
@@ -778,7 +873,7 @@ shiftCell.style.borderTop='2px solid #ffa500'
 
 shiftCell.innerHTML=`
 <div style='display:flex;align-items:center;gap:8px;padding-left:20px;'>
-<span>🔹 SHIFT: ${emp.shift||'APAC'}</span>
+<span>🔹 SHIFT: ${empShift}</span>
 </div>
 `
 }
@@ -786,11 +881,11 @@ shiftCell.innerHTML=`
 let row=table.insertRow()
 
 row.setAttribute('data-team',emp.team)
-row.setAttribute('data-shift',emp.shift)
+row.setAttribute('data-shift',empShift)
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
-row.insertCell(2).innerHTML=`<span class="shift-badge shift-${emp.shift||'APAC'}">${emp.shift||'APAC'}</span>`
+row.insertCell(2).innerHTML=createShiftDropdown(emp.name)
 
 let weekRTO=0
 
@@ -985,6 +1080,16 @@ function loadWFHComments(){
  })
 }
 
+function loadShiftSchedules(){
+
+ db.ref('shiftSchedules').on('value',snapshot=>{
+
+ shiftSchedules=snapshot.val() || {}
+
+ reloadEmployees()
+ })
+}
+
 function exportTable(){
 
 let table=document.getElementById('rtoTable')
@@ -993,7 +1098,7 @@ let rows=table.rows
 
 let html="<table border='1'>"
 
-let comments=[] 
+let comments=[]
 
 for(let i=0;i<rows.length;i++){
 
@@ -1061,6 +1166,7 @@ loadEmployees()
 loadAttendance()
 loadRecurringOff()
 loadWFHComments()
+loadShiftSchedules()
 reloadEmployees()
 
 </script>
