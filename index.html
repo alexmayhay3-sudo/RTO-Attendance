@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -94,6 +93,16 @@ z-index:5;
 background:#202020;
 min-width:120px;
 max-width:120px;
+}
+
+th:nth-child(3),
+td:nth-child(3){
+position:sticky;
+left:300px;
+z-index:5;
+background:#202020;
+min-width:80px;
+max-width:80px;
 }
 
 .day-header{
@@ -221,6 +230,54 @@ box-shadow:inset 0 0 0 1px #4ea1ff;
 #rtoTable td:hover{
 outline:1px solid #888;
 }
+
+.shift-badge{
+display:inline-block;
+padding:2px 8px;
+border-radius:10px;
+font-size:10px;
+font-weight:bold;
+}
+
+.shift-APAC{background:#2e7d32;color:white;}
+.shift-EMEA{background:#c62828;color:white;}
+.shift-US{background:#1565c0;color:white;}
+
+.comment-popup{
+display:none;
+position:absolute;
+background:#333;
+border:1px solid #555;
+padding:8px;
+border-radius:5px;
+font-size:11px;
+z-index:100;
+max-width:250px;
+white-space:normal;
+word-wrap:break-word;
+color:#eee;
+}
+
+td:hover .comment-popup{
+display:block;
+}
+
+.wfh-comment-icon{
+cursor:help;
+font-size:10px;
+margin-left:2px;
+color:#4ea1ff;
+}
+
+.shift-select{
+width:80px;
+font-size:10px;
+padding:2px;
+border-radius:3px;
+border:1px solid #555;
+background:#1f1f1f;
+color:#e6e6e6;
+}
 </style>
 </head>
 
@@ -267,10 +324,11 @@ Please DO NOT share this link with individuals who are not required to edit or m
 <select id="viewMode" onchange="reloadEmployees()">
 <option value="month">Full Month</option>
 <option value="week" selected>Current Week</option>
+<option value="day">Day</option>
 </select>
 
-<button onclick="previousWeek()">◀ Previous Week</button>
-<button onclick="nextWeek()">Next Week ▶</button>
+<button onclick="previousWeek()">◀ Previous</button>
+<button onclick="nextWeek()">Next ▶</button>
 
 <button onclick="exportTable()">Export</button>
 </div>
@@ -289,6 +347,12 @@ Please DO NOT share this link with individuals who are not required to edit or m
 <div class="employee-form">
 <input id="newEmployeeName" placeholder="Employee Name">
 <input id="newEmployeeTeam" placeholder="Team Name">
+<select id="newEmployeeShift" style="padding:6px;border-radius:4px;border:1px solid #555;background:#1f1f1f;color:#fff;">
+<option value="">Select Shift</option>
+<option value="APAC">APAC</option>
+<option value="EMEA">EMEA</option>
+<option value="US">US</option>
+</select>
 <button onclick="addEmployee()">Add Employee</button>
 </div>
 
@@ -297,6 +361,7 @@ Please DO NOT share this link with individuals who are not required to edit or m
 <tr>
 <th>Name</th>
 <th>Team</th>
+<th>Shift</th>
 </tr>
 </thead>
 <tbody id="employeeBody"></tbody>
@@ -326,6 +391,8 @@ const db=firebase.database()
 let employees=[]
 let attendance={}
 let offSchedules={}
+let shiftSchedules={}
+let wfhComments={}
 let collapsedTeams={}
 let visibleDates=[]
 let currentWeekStart=null
@@ -443,6 +510,14 @@ d.setDate(start.getDate()+i)
 visibleDates.push(d)
 }
 
+}else if(view==='day'){
+
+let today=new Date(year,month,1)
+if(currentWeekStart){
+today=new Date(currentWeekStart)
+}
+visibleDates.push(today)
+
 }else{
 
 let daysInMonth=new Date(year,month+1,0).getDate()
@@ -460,8 +535,8 @@ let table=document.getElementById('rtoTable')
 let header1=document.createElement('tr')
 let header2=document.createElement('tr')
 
-header1.innerHTML='<th>Name</th><th>Team</th>'
-header2.innerHTML='<th></th><th></th>'
+header1.innerHTML='<th>Name</th><th>Team</th><th>Shift</th>'
+header2.innerHTML='<th></th><th></th><th></th>'
 
 let days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
@@ -597,6 +672,7 @@ let tr=document.createElement('tr')
 tr.innerHTML=`
 <td>${emp.name}</td>
 <td>${emp.team}</td>
+<td><span class="shift-badge shift-${emp.shift||'APAC'}">${emp.shift||'APAC'}</span></td>
 `
 
 body.appendChild(tr)
@@ -607,15 +683,17 @@ function addEmployee(){
 
 let name=document.getElementById('newEmployeeName').value.trim()
 let team=document.getElementById('newEmployeeTeam').value.trim()
+let shift=document.getElementById('newEmployeeShift').value
 
-if(name==='' || team===''){
-alert('Complete employee details')
+if(name==='' || team==='' || shift===''){
+alert('Complete employee details including shift')
 return
 }
 
 let data={
 name:name,
-team:team
+team:team,
+shift:shift
 }
 
  db.ref('employees').push(data)
@@ -642,16 +720,26 @@ if(teamCompare!==0){
 return teamCompare
 }
 
+let shiftOrder={APAC:0,EMEA:1,US:2}
+let shiftA=shiftOrder[a.shift]||0
+let shiftB=shiftOrder[b.shift]||0
+
+if(shiftA!==shiftB){
+return shiftA-shiftB
+}
+
 return a.name.localeCompare(b.name)
 })
 
 let currentTeam=''
+let currentShift=''
 
 sortedEmployees.forEach(emp=>{
 
 if(currentTeam!==emp.team){
 
 currentTeam=emp.team
+currentShift=''
 
 let teamRow=table.insertRow()
 
@@ -671,12 +759,38 @@ teamCell.innerHTML=`
 `
 }
 
+if(currentShift!==emp.shift){
+
+currentShift=emp.shift
+
+let shiftRow=table.insertRow()
+
+shiftRow.setAttribute('data-team',emp.team)
+shiftRow.setAttribute('data-shift',emp.shift)
+
+let totalColumns=table.rows[0].cells.length
+
+let shiftCell=shiftRow.insertCell(0)
+shiftCell.colSpan=totalColumns
+shiftCell.classList.add('team-header')
+shiftCell.style.background='#1a3a5a !important'
+shiftCell.style.borderTop='2px solid #ffa500'
+
+shiftCell.innerHTML=`
+<div style='display:flex;align-items:center;gap:8px;padding-left:20px;'>
+<span>🔹 SHIFT: ${emp.shift||'APAC'}</span>
+</div>
+`
+}
+
 let row=table.insertRow()
 
 row.setAttribute('data-team',emp.team)
+row.setAttribute('data-shift',emp.shift)
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
+row.insertCell(2).innerHTML=`<span class="shift-badge shift-${emp.shift||'APAC'}">${emp.shift||'APAC'}</span>`
 
 let weekRTO=0
 
@@ -710,6 +824,14 @@ if(
  today.getFullYear()===date.getFullYear()
 ){
 cell.classList.add('current-day')
+}
+
+if(saved==='WFH spec Req'){
+let commentKey=`${key}_comment`
+let comment=wfhComments[commentKey]||''
+let icon='<span class="wfh-comment-icon" title="Click to add comment" onclick="event.stopPropagation();addComment(\''+emp.name+'\',\''+date.toISOString()+'\')">💬</span>'
+cell.innerHTML+=icon
+cell.innerHTML+=`<div class="comment-popup">${comment||'No comment'}</div>`
 }
 
 if(
@@ -804,7 +926,33 @@ saveRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())
 }
 }
 
+if(status==='WFH spec Req'){
+let comment=prompt('Please provide a short explanation for WFH special request:')
+if(comment!==null && comment.trim()!==''){
+let commentKey=`${key}_comment`
+wfhComments[commentKey]=comment.trim()
+db.ref('wfhComments/'+commentKey).set(comment.trim())
+}
+}
+
 reloadEmployees()
+}
+
+function addComment(name,dateString){
+
+let date=new Date(dateString)
+let key=getKey(name,date)
+let commentKey=`${key}_comment`
+
+let currentComment=wfhComments[commentKey]||''
+
+let newComment=prompt('Enter comment for WFH special request:',currentComment)
+
+if(newComment!==null){
+wfhComments[commentKey]=newComment.trim()
+db.ref('wfhComments/'+commentKey).set(newComment.trim())
+reloadEmployees()
+}
 }
 
 function loadAttendance(){
@@ -827,6 +975,16 @@ function loadRecurringOff(){
  })
 }
 
+function loadWFHComments(){
+
+ db.ref('wfhComments').on('value',snapshot=>{
+
+ wfhComments=snapshot.val() || {}
+
+ reloadEmployees()
+ })
+}
+
 function exportTable(){
 
 let table=document.getElementById('rtoTable')
@@ -834,6 +992,8 @@ let table=document.getElementById('rtoTable')
 let rows=table.rows
 
 let html="<table border='1'>"
+
+let comments=[] 
 
 for(let i=0;i<rows.length;i++){
 
@@ -855,6 +1015,13 @@ value=select.value || ''
 value=cell.innerText || ''
 }
 
+if(cell.querySelector('.wfh-comment-icon')){
+let commentKey=cell.getAttribute('data-comment-key')
+if(commentKey && wfhComments[commentKey]){
+comments.push(value+': '+wfhComments[commentKey])
+}
+}
+
 html+='<td>'+value+'</td>'
 }
 
@@ -862,6 +1029,13 @@ html+='</tr>'
 }
 
 html+='</table>'
+
+if(comments.length>0){
+html+='<br><br><b>Comments for WFH Special Requests:</b><br>'
+comments.forEach(c=>{
+html+=c+'<br>'
+})
+}
 
 let blob=new Blob([html],{type:'application/vnd.ms-excel'})
 
@@ -886,10 +1060,10 @@ setCurrentMonth()
 loadEmployees()
 loadAttendance()
 loadRecurringOff()
+loadWFHComments()
 reloadEmployees()
 
 </script>
 
 </body>
 </html>
-```
