@@ -390,6 +390,9 @@ let currentWeekStart=null
 let currentDayView=null
 let employeeShiftHistory = {}
 
+// NEW: Store weekly shift changes
+let weeklyShiftHistory = {}
+
 function showTab(tabId,el){
 
 document.querySelectorAll('.tab-content').forEach(t=>{
@@ -598,6 +601,13 @@ function getShiftKey(name){
 return `${name}-shift`
 }
 
+// NEW: Get week key for shift history
+function getWeekKey(name, date){
+    let d = new Date(date);
+    let weekStart = getStartOfWeek(d);
+    return `${name}-${weekStart.getFullYear()}-${weekStart.getMonth()}-${weekStart.getDate()}`;
+}
+
 function getCellColor(status){
 
 if(status=='RTO') return 'RTO'
@@ -651,8 +661,16 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
-// Get shift with history - only future dates get the new shift
-function getShiftForDate(name, date){
+// NEW: Get shift for a specific week
+function getShiftForWeek(name, date){
+    let weekKey = getWeekKey(name, date);
+    
+    // Check if there's a specific shift for this week
+    if(weeklyShiftHistory[weekKey]){
+        return weeklyShiftHistory[weekKey].shift;
+    }
+    
+    // Check if there's a shift history entry for this week
     let shiftKey = getShiftKey(name);
     let history = employeeShiftHistory[shiftKey] || [];
     
@@ -730,8 +748,8 @@ html+='</select>'
 return html
 }
 
-// Update shift with history tracking - only future dates change
-function updateShift(name,newShift){
+// NEW: Update shift for a specific week
+function updateShiftForWeek(name, newShift, date){
     let editor=document.getElementById('editor').value;
     
     if(editor===''){
@@ -739,45 +757,50 @@ function updateShift(name,newShift){
         return;
     }
     
-    let shiftKey=getShiftKey(name);
+    let weekKey = getWeekKey(name, date);
     
-    // Get current effective date (today) for the change
-    let effectiveDate = new Date();
-    effectiveDate.setHours(0,0,0,0);
+    // Save the shift for this specific week
+    weeklyShiftHistory[weekKey] = {
+        shift: newShift,
+        effectiveDate: new Date(date).toISOString(),
+        changedBy: editor
+    };
     
-    // Initialize history for this employee if not exists
+    // Also save to the main history for backward compatibility
+    let shiftKey = getShiftKey(name);
     if(!employeeShiftHistory[shiftKey]){
         employeeShiftHistory[shiftKey] = [];
     }
     
-    // Remove any existing entries for today to avoid duplicates
-    let todayStr = effectiveDate.toISOString();
-    employeeShiftHistory[shiftKey] = employeeShiftHistory[shiftKey].filter(
-        record => record.effectiveDate !== todayStr
+    // Add to history if not already there
+    let exists = employeeShiftHistory[shiftKey].some(record => 
+        record.effectiveDate === new Date(date).toISOString()
     );
     
-    // Add the new shift record to history
-    employeeShiftHistory[shiftKey].push({
-        shift: newShift,
-        effectiveDate: effectiveDate.toISOString(),
-        changedBy: editor
-    });
+    if(!exists){
+        employeeShiftHistory[shiftKey].push({
+            shift: newShift,
+            effectiveDate: new Date(date).toISOString(),
+            changedBy: editor
+        });
+        db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
+    }
     
-    // Also update the main shiftSchedules for backward compatibility
+    // Save weekly shift
+    db.ref('weeklyShiftHistory/'+weekKey).set(weeklyShiftHistory[weekKey]);
+    
+    // Also update main shift schedule for future
     shiftSchedules[shiftKey] = newShift;
-    
-    // Save to Firebase
     db.ref('shiftSchedules/'+shiftKey).set(newShift);
-    db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
     
     reloadEmployees();
 }
 
 function createShiftDropdown(name, date){
-    // Get shift based on the specific date
-    let currentShift = getShiftForDate(name, date);
+    // Get shift for this specific week
+    let currentShift = getShiftForWeek(name, date);
     
-    let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)">`;
+    let html=`<select class='shift-dropdown' onchange="updateShiftForWeek('${name}',this.value,'${date.toISOString()}')">`;
     
     let shifts=['APAC','EMEA','US'];
     
@@ -821,7 +844,7 @@ tr.innerHTML=`
 <td>${emp.name}</td>
 <td>${emp.team}</td>
 <td>
-<select onchange="updateShift('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
+<select onchange="updateShiftFromEmployee('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
 <option ${currentShift==='APAC'?'selected':''}>APAC</option>
 <option ${currentShift==='EMEA'?'selected':''}>EMEA</option>
 <option ${currentShift==='US'?'selected':''}>US</option>
@@ -831,6 +854,47 @@ tr.innerHTML=`
 
 body.appendChild(tr)
 })
+}
+
+function updateShiftFromEmployee(name,newShift){
+    let editor=document.getElementById('editor').value;
+    
+    if(editor===''){
+        alert('Enter checker name first');
+        return;
+    }
+    
+    // Apply to current week and future
+    let today = new Date();
+    let shiftKey = getShiftKey(name);
+    let weekKey = getWeekKey(name, today);
+    
+    // Save weekly shift
+    weeklyShiftHistory[weekKey] = {
+        shift: newShift,
+        effectiveDate: today.toISOString(),
+        changedBy: editor
+    };
+    
+    db.ref('weeklyShiftHistory/'+weekKey).set(weeklyShiftHistory[weekKey]);
+    
+    // Also save to history
+    if(!employeeShiftHistory[shiftKey]){
+        employeeShiftHistory[shiftKey] = [];
+    }
+    
+    employeeShiftHistory[shiftKey].push({
+        shift: newShift,
+        effectiveDate: today.toISOString(),
+        changedBy: editor
+    });
+    
+    shiftSchedules[shiftKey] = newShift;
+    
+    db.ref('shiftSchedules/'+shiftKey).set(newShift);
+    db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
+    
+    reloadEmployees();
 }
 
 function addEmployee(){
@@ -916,22 +980,19 @@ teamCell.innerHTML=`
 `
 }
 
-let shiftKey=getShiftKey(emp.name)
-let empShift=shiftSchedules[shiftKey] || emp.shift || 'APAC'
-
 let row=table.insertRow()
 
 row.setAttribute('data-team',emp.team)
-row.setAttribute('data-shift',empShift)
 
+// Name column
 row.insertCell(0).innerText=emp.name
+
+// Team column
 row.insertCell(1).innerText=emp.team
 
-// We'll create the shift dropdown per date instead of a single one
-// So we'll skip the shift column for now and add it per day
-let shiftCell = row.insertCell(2);
-// Use the first visible date for the dropdown
+// Shift column - use the first visible date
 let firstDate = visibleDates[0] || new Date();
+let shiftCell = row.insertCell(2);
 shiftCell.innerHTML = createShiftDropdown(emp.name, firstDate);
 
 let weekRTO=0
@@ -1197,6 +1258,14 @@ function loadShiftHistory(){
  })
 }
 
+// NEW: Load weekly shift history
+function loadWeeklyShiftHistory(){
+ db.ref('weeklyShiftHistory').on('value',snapshot=>{
+ weeklyShiftHistory=snapshot.val() || {}
+ reloadEmployees()
+ })
+}
+
 // Export with comments as footnotes
 function exportTable(){
 
@@ -1314,9 +1383,9 @@ loadWFHComments()
 loadOthersComments()
 loadShiftSchedules()
 loadShiftHistory()
+loadWeeklyShiftHistory() // NEW
 reloadEmployees()
 
 </script>
 
-</body>
-</html>
+</
