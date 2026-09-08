@@ -651,7 +651,7 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
-// MODIFIED: Get shift with history - only future dates get the new shift
+// Get shift with history - only future dates get the new shift
 function getShiftForDate(name, date){
     let shiftKey = getShiftKey(name);
     let history = employeeShiftHistory[shiftKey] || [];
@@ -663,7 +663,7 @@ function getShiftForDate(name, date){
     }
     
     // Sort history by effective date (oldest first)
-    history.sort((a,b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    let sortedHistory = [...history].sort((a,b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
     
     let targetDate = new Date(date);
     targetDate.setHours(0,0,0,0);
@@ -672,7 +672,7 @@ function getShiftForDate(name, date){
     let selectedShift = null;
     let selectedDate = null;
     
-    for(let record of history){
+    for(let record of sortedHistory){
         let recordDate = new Date(record.effectiveDate);
         recordDate.setHours(0,0,0,0);
         
@@ -732,8 +732,8 @@ html+='</select>'
 return html
 }
 
-// MODIFIED: Update shift with history tracking - only future dates change
-function updateShift(name,newShift,date){
+// Update shift with history tracking - only future dates change
+function updateShift(name,newShift){
     let editor=document.getElementById('editor').value;
     
     if(editor===''){
@@ -752,8 +752,11 @@ function updateShift(name,newShift,date){
         employeeShiftHistory[shiftKey] = [];
     }
     
-    // Get current shift before change
-    let currentShift = getDefaultShift(name);
+    // Remove any existing entries for today to avoid duplicates
+    let todayStr = effectiveDate.toISOString();
+    employeeShiftHistory[shiftKey] = employeeShiftHistory[shiftKey].filter(
+        record => record.effectiveDate !== todayStr
+    );
     
     // Add the new shift record to history
     employeeShiftHistory[shiftKey].push({
@@ -773,10 +776,10 @@ function updateShift(name,newShift,date){
 }
 
 function createShiftDropdown(name, date){
-    // MODIFIED: Get shift based on date
+    // Get shift based on date
     let currentShift = getShiftForDate(name, date);
     
-    let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value,new Date())">`;
+    let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)">`;
     
     let shifts=['APAC','EMEA','US'];
     
@@ -820,7 +823,7 @@ tr.innerHTML=`
 <td>${emp.name}</td>
 <td>${emp.team}</td>
 <td>
-<select onchange="updateShiftFromEmployee('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
+<select onchange="updateShift('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
 <option ${currentShift==='APAC'?'selected':''}>APAC</option>
 <option ${currentShift==='EMEA'?'selected':''}>EMEA</option>
 <option ${currentShift==='US'?'selected':''}>US</option>
@@ -830,38 +833,6 @@ tr.innerHTML=`
 
 body.appendChild(tr)
 })
-}
-
-function updateShiftFromEmployee(name,newShift){
-    let editor=document.getElementById('editor').value;
-    
-    if(editor===''){
-        alert('Enter checker name first');
-        return;
-    }
-    
-    let shiftKey=getShiftKey(name);
-    
-    // Initialize history
-    if(!employeeShiftHistory[shiftKey]){
-        employeeShiftHistory[shiftKey] = [];
-    }
-    
-    let effectiveDate = new Date();
-    effectiveDate.setHours(0,0,0,0);
-    
-    employeeShiftHistory[shiftKey].push({
-        shift: newShift,
-        effectiveDate: effectiveDate.toISOString(),
-        changedBy: editor
-    });
-    
-    shiftSchedules[shiftKey]=newShift;
-    
-    db.ref('shiftSchedules/'+shiftKey).set(newShift);
-    db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
-    
-    reloadEmployees();
 }
 
 function addEmployee(){
@@ -885,15 +856,6 @@ shift:shift
 
  document.getElementById('newEmployeeName').value=''
  document.getElementById('newEmployeeTeam').value=''
-}
-
-// MODIFIED: Check if a date is in the future
-function isFutureDate(date){
-    let today = new Date();
-    today.setHours(0,0,0,0);
-    let checkDate = new Date(date);
-    checkDate.setHours(0,0,0,0);
-    return checkDate >= today;
 }
 
 function reloadEmployees(){
@@ -956,7 +918,6 @@ teamCell.innerHTML=`
 `
 }
 
-// MODIFIED: Get shift based on current visible dates
 let shiftKey=getShiftKey(emp.name)
 let empShift=shiftSchedules[shiftKey] || emp.shift || 'APAC'
 
@@ -968,11 +929,8 @@ row.setAttribute('data-shift',empShift)
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
 
-// For shift column, we need to determine based on the first visible date
+// For shift column, use the first visible date to determine shift
 let firstDate = visibleDates[0] || new Date();
-let shiftForDisplay = getShiftForDate(emp.name, firstDate);
-
-// But we'll use the actual date-based shift in the dropdown
 let shiftCell = row.insertCell(2);
 shiftCell.innerHTML = createShiftDropdown(emp.name, firstDate);
 
@@ -1158,7 +1116,7 @@ db.ref('othersComments/'+commentKey).set(comment.trim())
 reloadEmployees()
 }
 
-// NEW: Function to add WFH comment
+// Function to add WFH comment
 function addWFHComment(name,dateString){
 let date=new Date(dateString)
 let key=getKey(name,date)
@@ -1172,7 +1130,7 @@ reloadEmployees()
 }
 }
 
-// NEW: Function to add OTHERS comment
+// Function to add OTHERS comment
 function addOthersComment(name,dateString){
 let date=new Date(dateString)
 let key=getKey(name,date)
@@ -1216,7 +1174,7 @@ function loadWFHComments(){
  })
 }
 
-// NEW: Load OTHERS comments
+// Load OTHERS comments
 function loadOthersComments(){
  db.ref('othersComments').on('value',snapshot=>{
  othersComments=snapshot.val() || {}
@@ -1234,7 +1192,7 @@ function loadShiftSchedules(){
  })
 }
 
-// NEW: Load shift history
+// Load shift history
 function loadShiftHistory(){
  db.ref('employeeShiftHistory').on('value',snapshot=>{
  employeeShiftHistory=snapshot.val() || {}
@@ -1242,7 +1200,7 @@ function loadShiftHistory(){
  })
 }
 
-// MODIFIED: Export with comments as footnotes
+// Export with comments as footnotes
 function exportTable(){
 
 let table=document.getElementById('rtoTable')
@@ -1261,8 +1219,6 @@ for(let i=0;i<rows.length;i++){
 html+='<tr>'
 
 let cells=rows[i].cells
-
-let rowData = {}
 
 for(let j=0;j<cells.length;j++){
 
@@ -1296,12 +1252,17 @@ comment = othersComments[commentKey] || '';
 }
 
 if(comment){
+let employeeName = rows[i].cells[0] ? rows[i].cells[0].innerText.replace(/💬/g, '').trim() : 'Unknown';
+let dayIndex = j - 3; // Adjust for the first 3 columns (Name, Team, Shift)
 let day = '';
-let cellIndex = j;
-// Try to get the day from header
+if(dayIndex >= 0 && dayIndex < visibleDates.length){
+day = visibleDates[dayIndex].toDateString();
+} else {
+day = 'Unknown';
+}
 allComments.push({
-employee: value,
-day: visibleDates[cellIndex - 3] ? visibleDates[cellIndex - 3].toDateString() : 'Unknown',
+employee: employeeName,
+day: day,
 comment: comment,
 type: commentType
 });
@@ -1320,7 +1281,8 @@ html += "<br><br><hr>"
 html += "<h3>Comments / Notes:</h3>"
 html += "<div style='font-size:12px;'>"
 allComments.forEach((item, index) => {
-html += `<p><b>${index+1}.</b> <b>${item.employee}</b> - ${item.day}: ${item.comment}</p>`
+let typeLabel = item.type === 'wfh' ? 'WFH Special Request' : 'OTHERS';
+html += `<p><b>${index+1}.</b> <b>${item.employee}</b> - ${item.day} (${typeLabel}): ${item.comment}</p>`
 })
 html += "</div>"
 }
@@ -1352,9 +1314,9 @@ loadEmployees()
 loadAttendance()
 loadRecurringOff()
 loadWFHComments()
-loadOthersComments() // NEW
+loadOthersComments()
 loadShiftSchedules()
-loadShiftHistory() // NEW
+loadShiftHistory()
 reloadEmployees()
 
 </script>
