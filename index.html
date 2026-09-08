@@ -110,7 +110,7 @@ min-width:70px !important;
 }
 
 select.status-dropdown{
-width:95px;
+width:105px;
 font-size:10px;
 padding:2px;
 border-radius:3px;
@@ -139,6 +139,8 @@ color:#e6e6e6;
 .Charity{background:#b88a1b;color:black;}
 .WFHspecReq{background:#176b87;color:white;}
 .Offset{background:#b88a1b;color:black;}
+.Unknown{background:#666;color:white;}
+.OTHERS{background:#8e44ad;color:white;}
 
 .week-separator{
 background:#111 !important;
@@ -276,7 +278,7 @@ color:#4ea1ff;
 
 <div class="notice">
 This attendance tracker is intended only for authorized personnel responsible for managing and updating employee attendance records.
-
+<br><br>
 Please DO NOT share this link with individuals who are not required to edit or maintain the attendance data. Unauthorized sharing may result in unintended changes, inaccurate records, or data integrity issues.
 </div>
 
@@ -381,10 +383,12 @@ let attendance={}
 let offSchedules={}
 let shiftSchedules={}
 let wfhComments={}
+let othersComments={} // NEW: For OTHERS comments
 let collapsedTeams={}
 let visibleDates=[]
 let currentWeekStart=null
 let currentDayView=null
+let employeeShiftHistory = {} // NEW: Store shift change history per employee
 
 function showTab(tabId,el){
 
@@ -606,6 +610,8 @@ if(status=='EL') return 'Emergency'
 if(status=='Charity Leave') return 'Charity'
 if(status=='WFH spec Req') return 'WFHspecReq'
 if(status=='Offset') return 'Offset'
+if(status=='Unknown') return 'Unknown'
+if(status=='OTHERS') return 'OTHERS'
 
 return ''
 }
@@ -645,6 +651,49 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
+// MODIFIED: Get shift with history - only future dates get the new shift
+function getShiftForDate(name, date){
+    let shiftKey = getShiftKey(name);
+    let history = employeeShiftHistory[shiftKey] || [];
+    
+    if(history.length === 0){
+        // No history, use default
+        let employee = employees.find(e=>e.name===name);
+        return employee ? employee.shift || 'APAC' : 'APAC';
+    }
+    
+    // Sort history by effective date (oldest first)
+    history.sort((a,b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    
+    let targetDate = new Date(date);
+    targetDate.setHours(0,0,0,0);
+    
+    // Find the most recent shift change that is <= target date
+    let selectedShift = null;
+    let selectedDate = null;
+    
+    for(let record of history){
+        let recordDate = new Date(record.effectiveDate);
+        recordDate.setHours(0,0,0,0);
+        
+        if(recordDate <= targetDate){
+            // Only apply if the change date is on or before the target date
+            if(!selectedDate || recordDate > selectedDate){
+                selectedDate = recordDate;
+                selectedShift = record.shift;
+            }
+        }
+    }
+    
+    if(selectedShift){
+        return selectedShift;
+    }
+    
+    // No history record before or on this date, use default
+    let employee = employees.find(e=>e.name===name);
+    return employee ? employee.shift || 'APAC' : 'APAC';
+}
+
 function getDefaultShift(name){
 
 let shiftKey=getShiftKey(name)
@@ -669,7 +718,8 @@ saved='Off'
 }
 }
 
-let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset']
+// UPDATED: Added 'Unknown' and 'OTHERS' options
+let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
 
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
@@ -682,39 +732,61 @@ html+='</select>'
 return html
 }
 
-function createShiftDropdown(name){
-
-let currentShift=getDefaultShift(name)
-
-let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)">`
-
-let shifts=['APAC','EMEA','US']
-
-shifts.forEach(s=>{
-html+=`<option ${currentShift===s?'selected':''}>${s}</option>`
-})
-
-html+='</select>'
-
-return html
+// MODIFIED: Update shift with history tracking - only future dates change
+function updateShift(name,newShift,date){
+    let editor=document.getElementById('editor').value;
+    
+    if(editor===''){
+        alert('Enter checker name first');
+        return;
+    }
+    
+    let shiftKey=getShiftKey(name);
+    
+    // Get current effective date (today) for the change
+    let effectiveDate = new Date();
+    effectiveDate.setHours(0,0,0,0);
+    
+    // Initialize history for this employee if not exists
+    if(!employeeShiftHistory[shiftKey]){
+        employeeShiftHistory[shiftKey] = [];
+    }
+    
+    // Get current shift before change
+    let currentShift = getDefaultShift(name);
+    
+    // Add the new shift record to history
+    employeeShiftHistory[shiftKey].push({
+        shift: newShift,
+        effectiveDate: effectiveDate.toISOString(),
+        changedBy: editor
+    });
+    
+    // Also update the main shiftSchedules for backward compatibility
+    shiftSchedules[shiftKey] = newShift;
+    
+    // Save to Firebase
+    db.ref('shiftSchedules/'+shiftKey).set(newShift);
+    db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
+    
+    reloadEmployees();
 }
 
-function updateShift(name,newShift){
-
-let editor=document.getElementById('editor').value
-
-if(editor===''){
-alert('Enter checker name first')
-return
-}
-
-let shiftKey=getShiftKey(name)
-
-shiftSchedules[shiftKey]=newShift
-
-db.ref('shiftSchedules/'+shiftKey).set(newShift)
-
-reloadEmployees()
+function createShiftDropdown(name, date){
+    // MODIFIED: Get shift based on date
+    let currentShift = getShiftForDate(name, date);
+    
+    let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value,new Date())">`;
+    
+    let shifts=['APAC','EMEA','US'];
+    
+    shifts.forEach(s=>{
+        html+=`<option ${currentShift===s?'selected':''}>${s}</option>`;
+    });
+    
+    html+='</select>';
+    
+    return html;
 }
 
 function loadEmployees(){
@@ -761,21 +833,35 @@ body.appendChild(tr)
 }
 
 function updateShiftFromEmployee(name,newShift){
-
-let editor=document.getElementById('editor').value
-
-if(editor===''){
-alert('Enter checker name first')
-return
-}
-
-let shiftKey=getShiftKey(name)
-
-shiftSchedules[shiftKey]=newShift
-
-db.ref('shiftSchedules/'+shiftKey).set(newShift)
-
-reloadEmployees()
+    let editor=document.getElementById('editor').value;
+    
+    if(editor===''){
+        alert('Enter checker name first');
+        return;
+    }
+    
+    let shiftKey=getShiftKey(name);
+    
+    // Initialize history
+    if(!employeeShiftHistory[shiftKey]){
+        employeeShiftHistory[shiftKey] = [];
+    }
+    
+    let effectiveDate = new Date();
+    effectiveDate.setHours(0,0,0,0);
+    
+    employeeShiftHistory[shiftKey].push({
+        shift: newShift,
+        effectiveDate: effectiveDate.toISOString(),
+        changedBy: editor
+    });
+    
+    shiftSchedules[shiftKey]=newShift;
+    
+    db.ref('shiftSchedules/'+shiftKey).set(newShift);
+    db.ref('employeeShiftHistory/'+shiftKey).set(employeeShiftHistory[shiftKey]);
+    
+    reloadEmployees();
 }
 
 function addEmployee(){
@@ -799,6 +885,15 @@ shift:shift
 
  document.getElementById('newEmployeeName').value=''
  document.getElementById('newEmployeeTeam').value=''
+}
+
+// MODIFIED: Check if a date is in the future
+function isFutureDate(date){
+    let today = new Date();
+    today.setHours(0,0,0,0);
+    let checkDate = new Date(date);
+    checkDate.setHours(0,0,0,0);
+    return checkDate >= today;
 }
 
 function reloadEmployees(){
@@ -861,6 +956,7 @@ teamCell.innerHTML=`
 `
 }
 
+// MODIFIED: Get shift based on current visible dates
 let shiftKey=getShiftKey(emp.name)
 let empShift=shiftSchedules[shiftKey] || emp.shift || 'APAC'
 
@@ -871,7 +967,14 @@ row.setAttribute('data-shift',empShift)
 
 row.insertCell(0).innerText=emp.name
 row.insertCell(1).innerText=emp.team
-row.insertCell(2).innerHTML=createShiftDropdown(emp.name)
+
+// For shift column, we need to determine based on the first visible date
+let firstDate = visibleDates[0] || new Date();
+let shiftForDisplay = getShiftForDate(emp.name, firstDate);
+
+// But we'll use the actual date-based shift in the dropdown
+let shiftCell = row.insertCell(2);
+shiftCell.innerHTML = createShiftDropdown(emp.name, firstDate);
 
 let weekRTO=0
 
@@ -907,12 +1010,40 @@ if(
 cell.classList.add('current-day')
 }
 
+// Add comment icon for WFH spec Req and OTHERS
+if(saved==='WFH spec Req' || saved==='OTHERS'){
+let commentKey = '';
+let comment = '';
+let commentType = '';
+let commentData = {};
+let icon = '';
+let popupComment = '';
+let iconTitle = '';
+let onClickAction = '';
+
 if(saved==='WFH spec Req'){
-let commentKey=`${key}_comment`
-let comment=wfhComments[commentKey]||''
-let icon='<span class="wfh-comment-icon" title="Click to add comment" onclick="event.stopPropagation();addComment(\''+emp.name+'\',\''+date.toISOString()+'\')">💬</span>'
-cell.innerHTML+=icon
-cell.innerHTML+=`<div class="comment-popup">${comment||'No comment'}</div>`
+commentKey = `${key}_comment`;
+comment = wfhComments[commentKey] || '';
+commentType = 'wfh';
+iconTitle = 'Click to add WFH comment';
+onClickAction = `addWFHComment('${emp.name}','${date.toISOString()}')`;
+} else if(saved==='OTHERS'){
+commentKey = `${key}_others_comment`;
+comment = othersComments[commentKey] || '';
+commentType = 'others';
+iconTitle = 'Click to add OTHERS comment';
+onClickAction = `addOthersComment('${emp.name}','${date.toISOString()}')`;
+}
+
+icon = `<span class="wfh-comment-icon" title="${iconTitle}" onclick="event.stopPropagation();${onClickAction}">💬</span>`;
+popupComment = comment || 'No comment';
+
+cell.innerHTML += icon;
+cell.innerHTML += `<div class="comment-popup">${popupComment}</div>`;
+
+// Store comment key for export
+cell.setAttribute('data-comment-key', commentKey);
+cell.setAttribute('data-comment-type', commentType);
 }
 
 if(
@@ -1007,6 +1138,7 @@ saveRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())
 }
 }
 
+// Updated: Handle WFH spec Req and OTHERS comments
 if(status==='WFH spec Req'){
 let comment=prompt('Please provide a short explanation for WFH special request:')
 if(comment!==null && comment.trim()!==''){
@@ -1014,24 +1146,42 @@ let commentKey=`${key}_comment`
 wfhComments[commentKey]=comment.trim()
 db.ref('wfhComments/'+commentKey).set(comment.trim())
 }
+} else if(status==='OTHERS'){
+let comment=prompt('Please provide a short explanation for OTHERS:')
+if(comment!==null && comment.trim()!==''){
+let commentKey=`${key}_others_comment`
+othersComments[commentKey]=comment.trim()
+db.ref('othersComments/'+commentKey).set(comment.trim())
+}
 }
 
 reloadEmployees()
 }
 
-function addComment(name,dateString){
-
+// NEW: Function to add WFH comment
+function addWFHComment(name,dateString){
 let date=new Date(dateString)
 let key=getKey(name,date)
 let commentKey=`${key}_comment`
-
 let currentComment=wfhComments[commentKey]||''
-
 let newComment=prompt('Enter comment for WFH special request:',currentComment)
-
 if(newComment!==null){
 wfhComments[commentKey]=newComment.trim()
 db.ref('wfhComments/'+commentKey).set(newComment.trim())
+reloadEmployees()
+}
+}
+
+// NEW: Function to add OTHERS comment
+function addOthersComment(name,dateString){
+let date=new Date(dateString)
+let key=getKey(name,date)
+let commentKey=`${key}_others_comment`
+let currentComment=othersComments[commentKey]||''
+let newComment=prompt('Enter comment for OTHERS:',currentComment)
+if(newComment!==null){
+othersComments[commentKey]=newComment.trim()
+db.ref('othersComments/'+commentKey).set(newComment.trim())
 reloadEmployees()
 }
 }
@@ -1066,6 +1216,14 @@ function loadWFHComments(){
  })
 }
 
+// NEW: Load OTHERS comments
+function loadOthersComments(){
+ db.ref('othersComments').on('value',snapshot=>{
+ othersComments=snapshot.val() || {}
+ reloadEmployees()
+ })
+}
+
 function loadShiftSchedules(){
 
  db.ref('shiftSchedules').on('value',snapshot=>{
@@ -1076,21 +1234,35 @@ function loadShiftSchedules(){
  })
 }
 
+// NEW: Load shift history
+function loadShiftHistory(){
+ db.ref('employeeShiftHistory').on('value',snapshot=>{
+ employeeShiftHistory=snapshot.val() || {}
+ reloadEmployees()
+ })
+}
+
+// MODIFIED: Export with comments as footnotes
 function exportTable(){
 
 let table=document.getElementById('rtoTable')
 
 let rows=table.rows
 
-let html="<table border='1'>"
+let html="<html><head><meta charset='UTF-8'></head><body>"
+html += "<h2>RTO Attendance Report</h2>"
 
-let comments=[]
+html += "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse:collapse;'>"
+
+let allComments = []  // Store all comments for footnote
 
 for(let i=0;i<rows.length;i++){
 
 html+='<tr>'
 
 let cells=rows[i].cells
+
+let rowData = {}
 
 for(let j=0;j<cells.length;j++){
 
@@ -1106,14 +1278,35 @@ value=select.value || ''
 value=cell.innerText || ''
 }
 
-if(cell.querySelector('.wfh-comment-icon')){
-let commentKey=cell.getAttribute('data-comment-key')
-if(commentKey && wfhComments[commentKey]){
-comments.push(value+': '+wfhComments[commentKey])
-}
-}
+// Clean up HTML entities and icons
+value = value.replace(/💬/g, '').trim();
 
 html+='<td>'+value+'</td>'
+
+// Check for comments
+let commentKey = cell.getAttribute('data-comment-key');
+let commentType = cell.getAttribute('data-comment-type');
+
+if(commentKey){
+let comment = '';
+if(commentType === 'wfh'){
+comment = wfhComments[commentKey] || '';
+} else if(commentType === 'others'){
+comment = othersComments[commentKey] || '';
+}
+
+if(comment){
+let day = '';
+let cellIndex = j;
+// Try to get the day from header
+allComments.push({
+employee: value,
+day: visibleDates[cellIndex - 3] ? visibleDates[cellIndex - 3].toDateString() : 'Unknown',
+comment: comment,
+type: commentType
+});
+}
+}
 }
 
 html+='</tr>'
@@ -1121,12 +1314,19 @@ html+='</tr>'
 
 html+='</table>'
 
-if(comments.length>0){
-html+='<br><br><b>Comments for WFH Special Requests:</b><br>'
-comments.forEach(c=>{
-html+=c+'<br>'
+// Add footnotes for comments
+if(allComments.length > 0){
+html += "<br><br><hr>"
+html += "<h3>Comments / Notes:</h3>"
+html += "<div style='font-size:12px;'>"
+allComments.forEach((item, index) => {
+html += `<p><b>${index+1}.</b> <b>${item.employee}</b> - ${item.day}: ${item.comment}</p>`
 })
+html += "</div>"
 }
+
+html += "<br><p><i>Report generated on: " + new Date().toLocaleString() + "</i></p>"
+html += "</body></html>"
 
 let blob=new Blob([html],{type:'application/vnd.ms-excel'})
 
@@ -1152,7 +1352,9 @@ loadEmployees()
 loadAttendance()
 loadRecurringOff()
 loadWFHComments()
+loadOthersComments() // NEW
 loadShiftSchedules()
+loadShiftHistory() // NEW
 reloadEmployees()
 
 </script>
