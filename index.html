@@ -110,7 +110,7 @@ min-width:70px !important;
 }
 
 select.status-dropdown{
-width:70px;
+width:95px;
 font-size:10px;
 padding:2px;
 border-radius:3px;
@@ -130,7 +130,8 @@ color:#e6e6e6;
 }
 
 .RTO{background:#1f6f43;color:white;}
-.WFH{background:#176b87;color:white;}
+.WFH-Weather{background:#176b87;color:white;}
+.WFH-Unresponsive{background:#8e44ad;color:white;}
 .Vacation{background:#b88a1b;color:black;}
 .Sick{background:#6b4fb3;color:white;}
 .Off{background:#a93232;color:white;}
@@ -315,8 +316,8 @@ Please DO NOT share this link with individuals who are not required to edit or m
 <option value="day">Day</option>
 </select>
 
-<button onclick="previousWeek()">◀ Previous</button>
-<button onclick="nextWeek()">Next ▶</button>
+<button onclick="previousPeriod()">◀ Previous</button>
+<button onclick="nextPeriod()">Next ▶</button>
 
 <button onclick="exportTable()">Export</button>
 </div>
@@ -383,6 +384,7 @@ let wfhComments={}
 let collapsedTeams={}
 let visibleDates=[]
 let currentWeekStart=null
+let currentDayView=null
 
 function showTab(tabId,el){
 
@@ -426,6 +428,7 @@ let now=new Date()
 document.getElementById('monthSelect').value=now.getMonth()
 
 currentWeekStart=getStartOfWeek(now)
+currentDayView=new Date(now)
 }
 
 function getStartOfWeek(date){
@@ -441,22 +444,42 @@ d.setHours(0,0,0,0)
 return d
 }
 
-function previousWeek(){
+function previousPeriod(){
 
+let view=document.getElementById('viewMode').value
+
+if(view==='week'){
 currentWeekStart.setDate(currentWeekStart.getDate()-7)
-
 syncSelectorsToWeek()
-
+reloadEmployees()
+}else if(view==='day'){
+currentDayView.setDate(currentDayView.getDate()-1)
+syncSelectorsToDay()
+reloadEmployees()
+}else{
+currentWeekStart.setDate(currentWeekStart.getDate()-7)
+syncSelectorsToWeek()
 reloadEmployees()
 }
+}
 
-function nextWeek(){
+function nextPeriod(){
 
+let view=document.getElementById('viewMode').value
+
+if(view==='week'){
 currentWeekStart.setDate(currentWeekStart.getDate()+7)
-
 syncSelectorsToWeek()
-
 reloadEmployees()
+}else if(view==='day'){
+currentDayView.setDate(currentDayView.getDate()+1)
+syncSelectorsToDay()
+reloadEmployees()
+}else{
+currentWeekStart.setDate(currentWeekStart.getDate()+7)
+syncSelectorsToWeek()
+reloadEmployees()
+}
 }
 
 function syncSelectorsToWeek(){
@@ -465,12 +488,24 @@ document.getElementById('monthSelect').value=currentWeekStart.getMonth()
 document.getElementById('yearSelect').value=currentWeekStart.getFullYear()
 }
 
+function syncSelectorsToDay(){
+
+document.getElementById('monthSelect').value=currentDayView.getMonth()
+document.getElementById('yearSelect').value=currentDayView.getFullYear()
+}
+
 function changeMonth(){
 
 let month=parseInt(document.getElementById('monthSelect').value)
 let year=parseInt(document.getElementById('yearSelect').value)
 
+let view=document.getElementById('viewMode').value
+
+if(view==='day'){
+currentDayView=new Date(year,month,currentDayView.getDate())
+}else{
 currentWeekStart=getStartOfWeek(new Date(year,month,1))
+}
 
 reloadEmployees()
 }
@@ -499,11 +534,9 @@ visibleDates.push(d)
 
 }else if(view==='day'){
 
-let today=new Date(year,month,1)
-if(currentWeekStart){
-today=new Date(currentWeekStart)
-}
-visibleDates.push(today)
+let day=new Date(currentDayView)
+day.setHours(0,0,0,0)
+visibleDates.push(day)
 
 }else{
 
@@ -564,7 +597,8 @@ return `${name}-shift`
 function getCellColor(status){
 
 if(status=='RTO') return 'RTO'
-if(status=='WFH') return 'WFH'
+if(status=='WFH - Weather Related') return 'WFH-Weather'
+if(status=='WFH - Unresponsive') return 'WFH-Unresponsive'
 if(status=='Vacation Leave') return 'Vacation'
 if(status=='Sick Leave') return 'Sick'
 if(status=='Off') return 'Off'
@@ -635,7 +669,7 @@ saved='Off'
 }
 }
 
-let options=['','RTO','WFH','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset']
+let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset']
 
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
