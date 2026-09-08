@@ -120,8 +120,8 @@ color:#e6e6e6;
 }
 
 select.shift-dropdown{
-width:70px;
-font-size:10px;
+width:65px;
+font-size:9px;
 padding:2px;
 border-radius:3px;
 border:1px solid #555;
@@ -277,16 +277,6 @@ cursor:help;
 font-size:10px;
 margin-left:2px;
 color:#4ea1ff;
-}
-
-.shift-select{
-width:80px;
-font-size:10px;
-padding:2px;
-border-radius:3px;
-border:1px solid #555;
-background:#1f1f1f;
-color:#e6e6e6;
 }
 </style>
 </head>
@@ -674,7 +664,7 @@ function createShiftDropdown(name){
 
 let currentShift=getDefaultShift(name)
 
-let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)" style="width:65px;font-size:9px;">`
+let html=`<select class='shift-dropdown' onchange="updateShift('${name}',this.value)">`
 
 let shifts=['APAC','EMEA','US']
 
@@ -872,8 +862,8 @@ shiftCell.style.background='#1a3a5a !important'
 shiftCell.style.borderTop='2px solid #ffa500'
 
 shiftCell.innerHTML=`
-<div style='display:flex;align-items:center;gap:8px;padding-left:20px;'>
-<span>🔹 SHIFT: ${empShift}</span>
+<div style='display:flex;align-items:center;gap:8px;padding-left:20px;font-size:11px;'>
+<span style='color:#ffa500;'>▸</span> ${empShift}
 </div>
 `
 }
