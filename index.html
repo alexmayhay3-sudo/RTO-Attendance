@@ -785,6 +785,9 @@ function createShiftDropdown(name, date){
     
     let html=`<select class='shift-dropdown' onchange="updateShiftForWeek('${name}',this.value,'${date.toISOString()}')">`;
     
+    // ✅ Add blank option at the top
+    html+=`<option value="" ${currentShift===''||currentShift==null?'selected':''}></option>`;
+    
     let shifts=['APAC','EMEA','US'];
     
     shifts.forEach(s=>{
