@@ -713,17 +713,26 @@ let employee=employees.find(e=>e.name===name)
 return employee ? employee.shift || 'APAC' : 'APAC'
 }
 
+// ✅ FIXED: Uses hasOwnProperty so an explicit blank selection stays blank
+function getSavedStatus(name, date){
+    let key = getKey(name, date);
+    
+    if(attendance.hasOwnProperty(key)){
+        // Trust whatever the user explicitly set, including blank
+        return attendance[key];
+    }
+    
+    // No record at all — check recurring Off
+    if(getRecurringOff(name, date.getFullYear(), date.getMonth(), date.getDate())){
+        return 'Off';
+    }
+    
+    return '';
+}
+
 function createDropdown(name,date){
 
-let key=getKey(name,date)
-
-let saved=attendance[key] || ''
-
-if(saved===''){
-if(getRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())){
-saved='Off'
-}
-}
+let saved = getSavedStatus(name, date);
 
 let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
 
@@ -739,6 +748,11 @@ return html
 }
 
 function updateShiftForWeek(name, newShift, date){
+    // ✅ Ignore blank selections
+    if(newShift === ''){
+        return;
+    }
+    
     let editor=document.getElementById('editor').value;
     
     if(editor===''){
@@ -831,6 +845,7 @@ tr.innerHTML=`
 <td>${emp.team}</td>
 <td>
 <select onchange="updateShiftFromEmployee('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
+<option value="" ${currentShift===''?'selected':''}></option>
 <option ${currentShift==='APAC'?'selected':''}>APAC</option>
 <option ${currentShift==='EMEA'?'selected':''}>EMEA</option>
 <option ${currentShift==='US'?'selected':''}>US</option>
@@ -843,6 +858,11 @@ body.appendChild(tr)
 }
 
 function updateShiftFromEmployee(name,newShift){
+    // ✅ Ignore blank selections
+    if(newShift === ''){
+        return;
+    }
+    
     let editor=document.getElementById('editor').value;
     
     if(editor===''){
@@ -923,10 +943,6 @@ let sortedEmployees=[...employees].sort((a,b)=>{
     }
     
     // Then sort by Shift (APAC, EMEA, US)
-    let shiftKeyA = getShiftKey(a.name);
-    let shiftKeyB = getShiftKey(b.name);
-    
-    // Get current shift for each employee (use first visible date or default)
     let firstDate = visibleDates[0] || new Date();
     let shiftA = getShiftForWeek(a.name, firstDate);
     let shiftB = getShiftForWeek(b.name, firstDate);
@@ -993,15 +1009,8 @@ let cell=row.insertCell(-1)
 
 cell.innerHTML=createDropdown(emp.name,date)
 
-let key=getKey(emp.name,date)
-
-let saved=attendance[key]
-
-if(saved===''){
-if(getRecurringOff(emp.name,date.getFullYear(),date.getMonth(),date.getDate())){
-saved='Off'
-}
-}
+// ✅ FIXED: use getSavedStatus so blank stays blank
+let saved = getSavedStatus(emp.name, date)
 
 let color=getCellColor(saved)
 
@@ -1021,6 +1030,7 @@ cell.classList.add('current-day')
 
 // Add comment icon for WFH spec Req and OTHERS
 if(saved==='WFH spec Req' || saved==='OTHERS'){
+let key = getKey(emp.name, date);
 let commentKey = '';
 let comment = '';
 let commentType = '';
