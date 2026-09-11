@@ -391,6 +391,9 @@ let currentDayView=null
 let employeeShiftHistory = {}
 let weeklyShiftHistory = {}
 
+// ✅ Constant for the blank label
+const BLANK_LABEL = '(Blank)';
+
 function showTab(tabId,el){
 
 document.querySelectorAll('.tab-content').forEach(t=>{
@@ -734,12 +737,20 @@ function createDropdown(name,date){
 
 let saved = getSavedStatus(name, date);
 
-let options=['','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
+// ✅ (Blank) as an explicit option instead of empty string
+let options=['(Blank)','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
 
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
 options.forEach(o=>{
-html+=`<option ${saved===o?'selected':''}>${o}</option>`
+// Match saved value against the option. If option is (Blank) and saved is '', it's selected.
+let isSelected = false;
+if(o === BLANK_LABEL){
+    isSelected = (saved === '');
+} else {
+    isSelected = (saved === o);
+}
+html+=`<option ${isSelected?'selected':''}>${o}</option>`
 })
 
 html+='</select>'
@@ -799,8 +810,8 @@ function createShiftDropdown(name, date){
     
     let html=`<select class='shift-dropdown' onchange="updateShiftForWeek('${name}',this.value,'${date.toISOString()}')">`;
     
-    // ✅ Add blank option at the top
-    html+=`<option value="" ${currentShift===''||currentShift==null?'selected':''}></option>`;
+    // ✅ Add explicit blank option at the top
+    html+=`<option value="" ${currentShift===''||currentShift==null?'selected':''}>${BLANK_LABEL}</option>`;
     
     let shifts=['APAC','EMEA','US'];
     
@@ -845,7 +856,7 @@ tr.innerHTML=`
 <td>${emp.team}</td>
 <td>
 <select onchange="updateShiftFromEmployee('${emp.name}',this.value)" style="padding:4px;border-radius:3px;border:1px solid #555;background:#1f1f1f;color:#fff;">
-<option value="" ${currentShift===''?'selected':''}></option>
+<option value="" ${currentShift===''?'selected':''}>${BLANK_LABEL}</option>
 <option ${currentShift==='APAC'?'selected':''}>APAC</option>
 <option ${currentShift==='EMEA'?'selected':''}>EMEA</option>
 <option ${currentShift==='US'?'selected':''}>US</option>
@@ -1136,6 +1147,11 @@ return
 
 let status=select.value
 
+// ✅ Convert (Blank) label back to empty string for storage
+if(status === BLANK_LABEL){
+    status = '';
+}
+
 let date=new Date(dateString)
 
 let key=getKey(name,date)
@@ -1298,6 +1314,11 @@ if(select){
 value=select.value || ''
 }else{
 value=cell.innerText || ''
+}
+
+// ✅ Convert (Blank) label back to empty for export
+if(value === BLANK_LABEL){
+    value = '';
 }
 
 // Clean up HTML entities and icons
