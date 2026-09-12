@@ -627,15 +627,16 @@ if(status=='OTHERS') return 'OTHERS'
 return ''
 }
 
-function getRecurringOff(name,year,month,day){
+// ✅ NEW: Returns the most recent recurring rule matching this weekday
+// Returns null if none match
+function getMostRecentRecurringRule(schedules, name, currentDate){
 
-let employeeRules=offSchedules[name]
+let employeeRules=schedules[name]
 
 if(!employeeRules){
-return false
+return null
 }
 
-let currentDate=new Date(year,month,day)
 let weekday=currentDate.getDay()
 
 let matchedRule=null
@@ -659,42 +660,52 @@ matchedRule=rule
 }
 })
 
-return matchedRule ? true : false
+return matchedRule
+}
+
+function getRecurringOff(name,year,month,day){
+
+let currentDate=new Date(year,month,day)
+
+let matched=getMostRecentRecurringRule(offSchedules,name,currentDate)
+
+return matched ? true : false
 }
 
 function getRecurringBlank(name,year,month,day){
 
-    let employeeRules=blankSchedules[name]
+let currentDate=new Date(year,month,day)
 
-    if(!employeeRules){
-        return false
-    }
+let matched=getMostRecentRecurringRule(blankSchedules,name,currentDate)
 
-    let currentDate=new Date(year,month,day)
-    let weekday=currentDate.getDay()
+return matched ? true : false
+}
 
-    let matchedRule=null
+// ✅ NEW: Decide which recurring status wins for a given date.
+// Compares the latest Off rule vs the latest Blank rule and
+// returns whichever has the more recent effectiveDate.
+function getRecurringStatus(name,date){
 
-    employeeRules.forEach(rule=>{
+let offRule=getMostRecentRecurringRule(offSchedules,name,date)
+let blankRule=getMostRecentRecurringRule(blankSchedules,name,date)
 
-        let ruleDate=new Date(rule.effectiveDate)
+if(!offRule && !blankRule){
+return null
+}
 
-        if(rule.weekday===weekday && currentDate>=ruleDate){
+if(offRule && !blankRule){
+return 'Off'
+}
 
-            if(!matchedRule){
-                matchedRule=rule
-            }else{
+if(blankRule && !offRule){
+return ''
+}
 
-                let existingDate=new Date(matchedRule.effectiveDate)
+// Both exist — most recent effectiveDate wins
+let offDate=new Date(offRule.effectiveDate)
+let blankDate=new Date(blankRule.effectiveDate)
 
-                if(ruleDate>existingDate){
-                    matchedRule=rule
-                }
-            }
-        }
-    })
-
-    return matchedRule ? true : false
+return blankDate>offDate ? '' : 'Off'
 }
 
 function getShiftForWeek(name, date){
@@ -752,7 +763,8 @@ let employee=employees.find(e=>e.name===name)
 return employee ? employee.shift || 'APAC' : 'APAC'
 }
 
-// ✅ FIXED: Uses hasOwnProperty so an explicit blank selection stays blank
+// ✅ FIXED: Uses hasOwnProperty so explicit values win, then resolves
+// recurring Off vs recurring Blank by whichever rule is newest.
 function getSavedStatus(name, date){
 
     let key=getKey(name,date)
@@ -761,12 +773,10 @@ function getSavedStatus(name, date){
         return attendance[key]
     }
 
-    if(getRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())){
-        return 'Off'
-    }
+    let recurring=getRecurringStatus(name,date)
 
-    if(getRecurringBlank(name,date.getFullYear(),date.getMonth(),date.getDate())){
-        return ''
+    if(recurring!==null){
+        return recurring
     }
 
     return ''
@@ -1154,6 +1164,41 @@ r.classList.remove('hidden-team-row')
 })
 }
 
+// ✅ NEW: Remove conflicting recurring rules from the OTHER schedule
+// for the same weekday whose effectiveDate is on/after the new rule's date.
+function removeConflictingRecurring(targetSchedules, otherSchedules, name, weekday, effectiveDateISO){
+
+let otherRules=otherSchedules[name]
+
+if(!otherRules){
+return false
+}
+
+let newRuleTime=new Date(effectiveDateISO).getTime()
+
+let filtered=otherRules.filter(rule=>{
+let sameWeekday = (rule.weekday === weekday)
+let ruleTime = new Date(rule.effectiveDate).getTime()
+// Keep rules that are NOT the same weekday OR are strictly older than new rule
+let keep = !(sameWeekday && ruleTime >= newRuleTime)
+return keep
+})
+
+if(filtered.length === otherRules.length){
+return false
+}
+
+if(filtered.length === 0){
+otherSchedules[name]=null
+db.ref(targetSchedules+'/'+name).remove()
+}else{
+otherSchedules[name]=filtered
+db.ref(targetSchedules+'/'+name).set(filtered)
+}
+
+return true
+}
+
 function saveRecurringOff(name,year,month,day){
 
 let targetDate=new Date(year,month,day)
@@ -1172,6 +1217,9 @@ offSchedules[name]=[]
 offSchedules[name].push(data)
 
  db.ref('offSchedules/'+name).set(offSchedules[name])
+
+// ✅ Remove conflicting Blank rules from same weekday on/after this date
+removeConflictingRecurring('blankSchedules', blankSchedules, name, weekday, data.effectiveDate)
 }
 
 function saveRecurringBlank(name,year,month,day){
@@ -1192,6 +1240,9 @@ function saveRecurringBlank(name,year,month,day){
     blankSchedules[name].push(data)
 
     db.ref('blankSchedules/'+name).set(blankSchedules[name])
+
+    // ✅ Remove conflicting Off rules from same weekday on/after this date
+    removeConflictingRecurring('offSchedules', offSchedules, name, weekday, data.effectiveDate)
 }
 
 function logStatus(select,name,dateString){
