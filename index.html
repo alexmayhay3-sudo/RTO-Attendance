@@ -381,6 +381,7 @@ const db=firebase.database()
 let employees=[]
 let attendance={}
 let offSchedules={}
+let blankSchedules={}
 let shiftSchedules={}
 let wfhComments={}
 let othersComments={}
@@ -661,6 +662,41 @@ matchedRule=rule
 return matchedRule ? true : false
 }
 
+function getRecurringBlank(name,year,month,day){
+
+    let employeeRules=blankSchedules[name]
+
+    if(!employeeRules){
+        return false
+    }
+
+    let currentDate=new Date(year,month,day)
+    let weekday=currentDate.getDay()
+
+    let matchedRule=null
+
+    employeeRules.forEach(rule=>{
+
+        let ruleDate=new Date(rule.effectiveDate)
+
+        if(rule.weekday===weekday && currentDate>=ruleDate){
+
+            if(!matchedRule){
+                matchedRule=rule
+            }else{
+
+                let existingDate=new Date(matchedRule.effectiveDate)
+
+                if(ruleDate>existingDate){
+                    matchedRule=rule
+                }
+            }
+        }
+    })
+
+    return matchedRule ? true : false
+}
+
 function getShiftForWeek(name, date){
     let weekKey = getWeekKey(name, date);
     
@@ -718,19 +754,22 @@ return employee ? employee.shift || 'APAC' : 'APAC'
 
 // ✅ FIXED: Uses hasOwnProperty so an explicit blank selection stays blank
 function getSavedStatus(name, date){
-    let key = getKey(name, date);
-    
+
+    let key=getKey(name,date)
+
     if(attendance.hasOwnProperty(key)){
-        // Trust whatever the user explicitly set, including blank
-        return attendance[key];
+        return attendance[key]
     }
-    
-    // No record at all — check recurring Off
-    if(getRecurringOff(name, date.getFullYear(), date.getMonth(), date.getDate())){
-        return 'Off';
+
+    if(getRecurringOff(name,date.getFullYear(),date.getMonth(),date.getDate())){
+        return 'Off'
     }
-    
-    return '';
+
+    if(getRecurringBlank(name,date.getFullYear(),date.getMonth(),date.getDate())){
+        return ''
+    }
+
+    return ''
 }
 
 function createDropdown(name,date){
@@ -1135,6 +1174,26 @@ offSchedules[name].push(data)
  db.ref('offSchedules/'+name).set(offSchedules[name])
 }
 
+function saveRecurringBlank(name,year,month,day){
+
+    let targetDate=new Date(year,month,day)
+
+    let weekday=targetDate.getDay()
+
+    let data={
+        weekday:weekday,
+        effectiveDate:targetDate.toISOString()
+    }
+
+    if(!blankSchedules[name]){
+        blankSchedules[name]=[]
+    }
+
+    blankSchedules[name].push(data)
+
+    db.ref('blankSchedules/'+name).set(blankSchedules[name])
+}
+
 function logStatus(select,name,dateString){
 
 let editor=document.getElementById('editor').value
@@ -1159,6 +1218,22 @@ let key=getKey(name,date)
 attendance[key]=status
 
  db.ref('attendance/'+key).set(status)
+
+if(status===''){
+
+    let recurring=confirm(
+        'Make this BLANK recurring every week from this date onward?'
+    )
+
+    if(recurring){
+        saveRecurringBlank(
+            name,
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+        )
+    }
+}
 
 if(status==='Off'){
 
@@ -1236,6 +1311,16 @@ function loadRecurringOff(){
 
  reloadEmployees()
  })
+}
+
+function loadRecurringBlank(){
+
+    db.ref('blankSchedules').on('value',snapshot=>{
+
+        blankSchedules=snapshot.val() || {}
+
+        reloadEmployees()
+    })
 }
 
 function loadWFHComments(){
@@ -1318,7 +1403,7 @@ value=cell.innerText || ''
 
 // ✅ Convert (Blank) label back to empty for export
 if(value === BLANK_LABEL){
-    value = '';
+    value = ''
 }
 
 // Clean up HTML entities and icons
@@ -1400,6 +1485,7 @@ setCurrentMonth()
 loadEmployees()
 loadAttendance()
 loadRecurringOff()
+loadRecurringBlank()
 loadWFHComments()
 loadOthersComments()
 loadShiftSchedules()
