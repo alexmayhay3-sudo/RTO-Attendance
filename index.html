@@ -787,8 +787,7 @@ function createDropdown(name,date){
 let saved = getSavedStatus(name, date);
 
 // ✅ (Blank) as an explicit option instead of empty string
-let options=['(Blank)','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS']
-
+let options = ['(Blank)','RTO','WFH - Weather Related','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS','Calamity Leave','WFH'];
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
 options.forEach(o=>{
