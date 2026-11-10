@@ -133,6 +133,7 @@ color:#e6e6e6;
 .WFH-Weather{background:#176b87;color:white;}
 .WFH-Unresponsive{background:#8e44ad;color:white;}
 .Vacation{background:#b88a1b;color:black;}
+.Holiday{background:#b88a1b;color:black;}   
 .Sick{background:#6b4fb3;color:white;}
 .Off{background:#a93232;color:white;}
 .Emergency{background:#b88a1b;color:black;}
@@ -615,6 +616,7 @@ if(status=='RTO') return 'RTO'
 if(status=='WFH - Weather Related') return 'WFH-Weather'
 if(status=='WFH - Unresponsive') return 'WFH-Unresponsive'
 if(status=='Vacation Leave') return 'Vacation'
+if(status=='Holiday Leave') return 'Holiday'    
 if(status=='Sick Leave') return 'Sick'
 if(status=='Off') return 'Off'
 if(status=='EL') return 'Emergency'
@@ -787,7 +789,7 @@ function createDropdown(name,date){
 let saved = getSavedStatus(name, date);
 
 // ✅ (Blank) as an explicit option instead of empty string
-let options = ['(Blank)','RTO','WFH - Weather Related','WFH - Medical','WFH - Unresponsive','Vacation Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS','Calamity Leave','WFH'];
+let options = ['(Blank)','RTO','WFH - Weather Related','WFH - Medical','WFH - Unresponsive','Vacation Leave','Holiday Leave','Sick Leave','Off','EL','Charity Leave','WFH spec Req','Offset','Unknown','OTHERS','Calamity Leave','WFH'];
 let html=`<select class='status-dropdown' onchange="logStatus(this,'${name}','${date.toISOString()}')">`
 
 options.forEach(o=>{
